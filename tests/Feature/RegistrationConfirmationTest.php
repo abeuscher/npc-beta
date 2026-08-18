@@ -1,6 +1,6 @@
 <?php
 
-use App\Mail\RegistrationConfirmation;
+use Plugins\Events\Mail\RegistrationConfirmation;
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventRegistration;
@@ -136,9 +136,6 @@ it('sends exactly one confirmation for a portal member free registration', funct
 
 function invokeEventRegistrationWebhook(string $sessionId, string $email = 'paid@example.com'): void
 {
-    $controller = new \Plugins\Payments\Http\Controllers\StripeWebhookController();
-    $reflection = new ReflectionMethod($controller, 'handleEventRegistrationCheckout');
-    $reflection->setAccessible(true);
 
     $payload = (object) [
         'id'               => $sessionId,
@@ -147,7 +144,7 @@ function invokeEventRegistrationWebhook(string $sessionId, string $email = 'paid
         'customer_details' => (object) ['email' => $email, 'name' => 'Jane Paid'],
     ];
 
-    $reflection->invoke($controller, $payload, (object) ['event_registration_checkout' => '1']);
+    event(new \App\Payments\Events\CheckoutSettled($payload, (object) ['event_registration_checkout' => '1']));
 }
 
 it('webhook promotion sends exactly one confirmation for a multi-row paid order', function () {

@@ -88,8 +88,8 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Edit Page (includes page builder) | `PageResource/Pages/EditPage.php` |
 | Blog Posts (list) | `PostResource.php` |
 | Edit Post (includes page builder) | `PostResource/Pages/EditPost.php` |
-| Events (list) | `EventResource.php` |
-| Edit Event | `EventResource/Pages/EditEvent.php` |
+| Events (list) | `plugins/Events/Filament/Resources/EventResource.php` |
+| Edit Event | `plugins/Events/Filament/Resources/EventResource/Pages/EditEvent.php` |
 | Navigation (list) | `NavigationMenuResource.php` |
 | Collections (list — custom collections) | `CollectionResource.php` |
 | Collection Manager (list — content collections) | `ContentCollectionResource.php` |
@@ -118,14 +118,14 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 |---------------------------|----------------------|
 | Importer | `Filament/Pages/ImporterPage.php` |
 | Import Contacts | `Filament/Pages/ImportContactsPage.php` |
-| Import Events | `Filament/Pages/ImportEventsPage.php` |
+| Import Events | `plugins/Events/Filament/Pages/ImportEventsPage.php` |
 | Import Donations | `Filament/Pages/ImportDonationsPage.php` |
 | Import Memberships | `Filament/Pages/ImportMembershipsPage.php` |
 | Import Invoice Details | `Filament/Pages/ImportInvoiceDetailsPage.php` |
 | Import Notes | `Filament/Pages/ImportNotesPage.php` |
 | Import History | `Filament/Pages/ImportHistoryPage.php` |
 | Import Progress (contacts) | `Filament/Pages/ImportProgressPage.php` |
-| Import Progress (events) | `Filament/Pages/ImportEventsProgressPage.php` |
+| Import Progress (events) | `plugins/Events/Filament/Pages/ImportEventsProgressPage.php` |
 | Import Progress (donations) | `Filament/Pages/ImportDonationsProgressPage.php` |
 | Import Progress (memberships) | `Filament/Pages/ImportMembershipsProgressPage.php` |
 | Import Progress (invoice details) | `Filament/Pages/ImportInvoiceDetailsProgressPage.php` |
@@ -158,14 +158,14 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Member portal login | `LoginController` |
 | Member portal signup | `SignupController` |
 | Member portal account dashboard | `AccountController` |
-| Event registration (POST) | `EventController::register` |
+| Event registration (POST) | `Plugins\Events\Http\Controllers\EventController::register` |
 | Product checkout (POST) | `ProductCheckoutController::store` |
 | Donation checkout (POST) | `DonationCheckoutController::store` |
 | Web form submission (POST) | `FormSubmissionController::store` |
-| Portal event registration (POST) | `Portal\EventRegistrationController::store` |
+| Portal event registration (POST) | `Plugins\Events\Http\Controllers\Portal\EventRegistrationController::store` |
 | Membership checkout (POST) | `MembershipCheckoutController::store` |
 | Product waitlist (POST) | `ProductWaitlistController::store` |
-| Events API (JSON) (`/api/events.json`) | `Api\EventsController::index` |
+| Events API (JSON) (`/api/events.json`) | closure in `plugins/Events/routes/web.php` |
 | Sitemap (`/sitemap.xml`) | `SitemapController::index` |
 | Robots (`/robots.txt`) | `RobotsController::index` |
 | Portal password reset | `Portal\PasswordResetController` |

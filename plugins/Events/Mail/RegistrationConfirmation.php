@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mail;
+namespace Plugins\Events\Mail;
 
 use App\Models\EmailTemplate;
 use App\Models\EventRegistration;

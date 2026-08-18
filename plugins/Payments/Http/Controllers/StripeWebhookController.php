@@ -4,10 +4,8 @@ namespace Plugins\Payments\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Mail\DonationAcknowledgment;
-use App\Mail\RegistrationConfirmation;
 use App\Models\Contact;
 use App\Models\Donation;
-use App\Models\EventRegistration;
 use App\Models\Membership;
 use App\Models\ProductPrice;
 use App\Models\Purchase;
@@ -68,9 +66,15 @@ class StripeWebhookController extends Controller
             return $this->handleDonationCheckout($event);
         }
 
-        // ── Event registration ───────────────────────────────────────────────
+        // ── Event registration — inverted to the Events vertical ────────────
+        // (docs/plugin-contract.md surface 10, session 381.) Payments keeps
+        // the metadata routing switch; the Events plugin's listener owns the
+        // fulfillment. With the Events plugin absent the dispatch has no
+        // listener: 200, rows stay pending, data kept.
         if (! empty($metadata->event_registration_checkout)) {
-            return $this->handleEventRegistrationCheckout($session, $metadata);
+            event(new \App\Payments\Events\CheckoutSettled($session, $metadata));
+
+            return response('OK', 200);
         }
 
         // ── Membership ──────────────────────────────────────────────────────
@@ -186,58 +190,6 @@ class StripeWebhookController extends Controller
         ));
 
         $donation->update(['acknowledged_at' => now()]);
-    }
-
-    private function handleEventRegistrationCheckout(object $session, object $metadata): Response
-    {
-        $sessionId = $session->id;
-
-        $registrations = EventRegistration::where('stripe_session_id', $sessionId)
-            ->where('status', 'pending')
-            ->get();
-
-        if ($registrations->isEmpty()) {
-            Log::warning('Stripe event registration checkout: no pending registrations found', ['stripe_session_id' => $sessionId]);
-            return response('OK', 200);
-        }
-
-        $intentId    = $session->payment_intent;
-        $amountTotal = $session->amount_total ?? 0;
-
-        $first   = $registrations->first();
-        $contact = $first->contact_id
-            ? $first->contact
-            : $this->findOrCreateContact($session->customer_details ?? null);
-
-        foreach ($registrations as $registration) {
-            $registration->update([
-                'status'                   => 'registered',
-                'stripe_payment_intent_id' => $intentId,
-                'contact_id'               => $registration->contact_id ?? $contact?->id,
-            ]);
-        }
-
-        // One Transaction records the order total; subject linkage stays single-
-        // valued (the first registration on the session). Sibling rows share
-        // the linkage implicitly via the shared stripe_session_id.
-        Transaction::recordStripe([
-            'subject_type' => EventRegistration::class,
-            'subject_id'   => $first->id,
-            'contact_id'   => $contact?->id,
-            'amount'       => $amountTotal / 100,
-            'stripe_id'    => $intentId,
-        ]);
-
-        // One thank-you per order, at confirm time — payment is the confirm-
-        // point for the paid path (the free path emails in the registration
-        // controllers). Idempotent via the pending-only filter above: a webhook
-        // replay finds no pending rows and early-returns before reaching here.
-        // Queued (not sent) so a mail-provider hiccup cannot fail the webhook.
-        if (! empty($first->email)) {
-            Mail::to($first->email)->queue(new RegistrationConfirmation($first));
-        }
-
-        return response('OK', 200);
     }
 
     private function handleMembershipCheckout(object $session, object $metadata): Response

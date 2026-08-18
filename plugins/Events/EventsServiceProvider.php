@@ -121,6 +121,14 @@ class EventsServiceProvider extends ServiceProvider
 
         Gate::policy(Event::class, EventPolicy::class);
 
+        // The inbound payments inversion (contract surface 10, events slice):
+        // the Payments webhook dispatches the core CheckoutSettled event for
+        // event-registration sessions; this listener owns the fulfillment.
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Payments\Events\CheckoutSettled::class,
+            \Plugins\Events\Listeners\PromotePaidRegistrations::class,
+        );
+
         // Command + schedule registered here so removing the plugin's
         // config/plugins.php line unschedules the reminders job (disabled =
         // inert). Production runs `php artisan schedule:run` via cron.

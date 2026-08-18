@@ -1,7 +1,7 @@
 <?php
 
 use Plugins\Events\Filament\Pages\ImportEventsProgressPage;
-use App\Mail\RegistrationConfirmation;
+use Plugins\Events\Mail\RegistrationConfirmation;
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventRegistration;

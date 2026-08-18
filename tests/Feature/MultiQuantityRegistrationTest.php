@@ -176,10 +176,9 @@ it('webhook promotes all pending registrations sharing a stripe_session_id and r
         'quantity'           => 1,
     ]);
 
-    // Build a Stripe-event-shaped payload and invoke the controller handler.
-    $controller = new \Plugins\Payments\Http\Controllers\StripeWebhookController();
-    $reflection = new ReflectionMethod($controller, 'handleEventRegistrationCheckout');
-    $reflection->setAccessible(true);
+    // Build a Stripe-session-shaped payload and dispatch the core CheckoutSettled
+    // event — the path the Payments webhook takes since the surface-10 inversion
+    // (session 381); the Events plugin's listener owns the promotion.
 
     $payload = (object) [
         'id'                => $sid,
@@ -188,7 +187,7 @@ it('webhook promotes all pending registrations sharing a stripe_session_id and r
         'customer_details'  => (object) ['email' => 'paid@example.com', 'name' => 'Jane Paid'],
     ];
 
-    $reflection->invoke($controller, $payload, (object) ['event_registration_checkout' => '1']);
+    event(new \App\Payments\Events\CheckoutSettled($payload, (object) ['event_registration_checkout' => '1']));
 
     expect($r1->fresh()->status)->toBe('registered')
         ->and($r2->fresh()->status)->toBe('registered')

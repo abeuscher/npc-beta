@@ -1,6 +1,6 @@
 <?php
 
-use App\Mail\RegistrationConfirmation;
+use Plugins\Events\Mail\RegistrationConfirmation;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\User;

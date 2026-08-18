@@ -1,6 +1,6 @@
 # Plugin Contract
 
-**Contract Version:** `0.4.0`
+**Contract Version:** `0.5.0`
 **Status:** active — Stage A (in-repo module boundaries)
 **Owner:** core (this repo). Plugins implement against this document.
 **Canonical plan:** `sessions/plugin-architecture-plan.md` (architecture rationale, arc, question dispositions)
@@ -13,7 +13,7 @@ The single source of truth for the surface **core publishes to plugins**. A plug
 
 **Marking discipline:** every surface below is marked **PROVEN** (exercised end-to-end by a shipped extraction, with tests) or **DECLARED** (specified, not yet exercised). A surface is only promoted to PROVEN in the session that exercises it. The version bumps FM-contract-style: additive clarifications bump the patch/minor version; changing a PROVEN surface's shape is a breaking change and bumps the major version once this doc reaches 1.0.0.
 
-**Reference implementations:** the LogoGarden pilot at `plugins/LogoGarden/` (extracted session 377 — arc P1) for a widget plugin, and the Payments foundation plugin at `plugins/Payments/` (extracted session 380 — arc P4) for a non-widget plugin owning services, an HTTP surface, an observer, and a capability declaration.
+**Reference implementations:** the LogoGarden pilot at `plugins/LogoGarden/` (extracted session 377 — arc P1) for a widget plugin, the Payments foundation plugin at `plugins/Payments/` (extracted session 380 — arc P4) for a non-widget plugin owning services, an HTTP surface, an observer, and a capability declaration, and the Events vertical at `plugins/Events/` (extracted session 381 — arc P5) for a full domain vertical: public + portal controllers and routes, observers, policy, mailables, a scheduled command, a Filament resource + import pages through the admin socket, seven widgets (nested under `Widgets/`), an importer contribution, and an optional foundation-plugin dependency consumed through capability detection.
 
 ---
 
@@ -50,9 +50,11 @@ A plugin registers `App\Widgets\Contracts\WidgetDefinition` subclasses into the 
 - **Sources & arms (exercised by the P2 retrofit):** `SOURCE_SYSTEM_MODEL` arms now include `fund`, `membership_tier`, `navigation_menu` (single, id filter), and `portal_member` (single; resolves the portal guard inside the arm, logged-out ⇒ `['item' => null]`, non-leak tested). `SOURCE_SERVICE` covers service-backed datasets (`setup_checklist`, `scrub_counts`) whose arms hard-gate on super-admin. `SOURCE_PAGE_CONTEXT` contracts may declare fields (e.g. `site_name`, a site-global token) for direct `$widgetData` reads. Every arm projects contract-declared fields only, fail-closed.
 - **Widget folder paths:** `WidgetDefinition::baseDir()` resolves the widget's own folder by reflection (generalizing 377's `thumbnailDir()`); anything declared relative to the widget folder (thumbnails, screenshots) resolves through it in core and plugins alike.
 
+**At-scale contributor (session 381):** the Events vertical registers seven widgets from one provider, nested at `plugins/Events/Widgets/{Name}/` (a vertical plugin's widget folders nest under `Widgets/`; single-widget plugins stay at the plugin root). Each definition overrides `template()` to include through the plugin's own widget view namespace, and template partials (`event-row`, `row`) include through the same namespace. Standing-guard globs (`WidgetTemplateBoundaryTest`, `WidgetColorTokenConsumptionTest`) and the thumbnail tooling cover the nested shape. `widgets:sync` keeps the seven `widget_types` rows (handles unchanged) with updated asset paths; a plugin widget may declare a **core** widget's stylesheet as a build input (EventsListing reuses core BlogPager's pager styles) — asset paths are repo-relative build inputs, not namespace reaches.
+
 Proven by: the pilot's registration, sync-row, and view-namespace tests (`PluginPilotSession377Test`), render parity through the contract resolver (`LogoGardenContractRetrofitTest`), the all-41 retrofit's arm + parity tests (`WidgetBoundaryArmsSession378Test`, `WidgetBoundaryRetrofitSession378Test`), and the standing boundary guard (`WidgetTemplateBoundaryTest`).
 
-### 3. Admin contribution — **DECLARED** *(mechanics built and fixture-tested, session 379 — arc P3)*
+### 3. Admin contribution — **PROVEN** (session 381)
 
 A plugin declares its admin-shell contribution from its provider's `register()` by handing an `App\Plugins\AdminContribution` to the core `App\Plugins\PluginAdminRegistry` singleton (bound by `PluginServiceProvider` before any plugin registers; `AdminPanelProvider` reads the registry when Filament builds the panel — `bootstrap/providers.php` guarantees the ordering). The contribution declares:
 
@@ -68,15 +70,19 @@ Three settled conventions (owner-approved, session 376), now mechanical:
 
 Removing the plugin's `config/plugins.php` line removes the whole contribution — page, routes, permission seeding (the surface-1 remove-the-line guarantee, extended to the admin socket).
 
-Fixture-tested by `tests/Feature/PluginAdminSocketSession379Test.php` (+ the removal mirror `PluginAdminSocketRemovalSession379Test.php`) via the `SocketProbe` fixture plugin at `tests/Fixtures/Plugins/SocketProbe/` — one page in a core nav group with a sort weight, one route file, one permission. **Stays DECLARED per the honesty rule**: promotion to PROVEN waits for the first shipping plugin with admin pages (P5+).
+**Extracted-vertical permission nuance (session 381):** the permission channel above is for genuinely NEW permission names a plugin introduces. A vertical extracted from core keeps its pre-existing resource permissions (e.g. `view_any_event` … `delete_event`) in core's `PermissionSeeder` role matrix with their shipped-role grants — moving their seeding to the plugin channel would break the role matrix on a plugin-removed install (Spatie throws granting a missing permission). Core's role matrix stays whole until it becomes composable (arc P8 at the earliest); the Events plugin accordingly declares **no** permission names.
 
-### 4. Routes — **DECLARED** *(mechanics built and fixture-tested, session 379 — arc P3)*
+Proven by: the Events vertical (session 381, arc P5) — `EventResource` + four pages plus the two import wizard pages discovered from `plugins/Events/Filament/` via `resourcesPath`/`pagesPath`, landing on byte-identical route names/URIs/middleware (272/272 parity, action FQCNs excepted), nav placement (`CMS` group, sort 3) unchanged. The `SocketProbe` fixture (+ removal mirror) is **kept as a standing regression fixture** — it exercises the socket in isolation, including axes no shipping plugin currently uses. Removal mirror: `EventsPluginRemovalSession381Test` (admin resource + import pages gone).
+
+### 4. Routes — **PROVEN** (session 381)
 
 Core's own admin routes are the precedent: `AdminPanelProvider`'s former ~100-line inline `->routes()` closure is decomposed into per-feature files under `routes/admin/` (session 379, route-list parity verified) — each file self-contained, carrying its own middleware/prefixes/names, pulled into the panel's route group.
 
 A plugin contributes the same shape: the `routesFile` path in its `AdminContribution` is pulled into the panel's `->routes()` group after core's files. **Core wraps every plugin pull in Filament's `Authenticate` middleware — a plugin admin route can never opt out of panel auth**; the plugin's file carries everything else (names, prefixes, extra middleware). Routes land inside the panel's base middleware stack (suspension gate, security headers, session, CSRF) and under the panel's name prefix (`filament.admin.`).
 
-Fixture-tested by the same SocketProbe tests as surface 3. **Stays DECLARED per the honesty rule** until a shipping plugin registers routes (P5+).
+Front-of-house (non-panel) routes are the other half of this surface: a plugin's provider `loadRoutesFrom()`s its own route file, self-contained with middleware and names (the Payments webhook precedent, session 380). Provider `boot()` runs before core's `routes/web.php` loads (at app booted), so a plugin GET route registers ahead of the page-slug catch-all — the Events JSON endpoint depends on this ordering.
+
+Proven by: the Events vertical (session 381) — `plugins/Events/routes/web.php` registers `events.register` (throttled POST), `portal.events.register` (portal-auth stack), and `api.events.json` (GET ahead of the catch-all) with identical names/URIs/middleware to their pre-carve core registrations; admin-page routes land through surface 3's discovery. The `routesFile` in-panel pull specifically remains exercised by the standing SocketProbe fixture (no shipping plugin needs an in-panel route file yet). Vanish: with the line removed the POST paths answer 405 (the GET catch-all owns every path) and the JSON path falls to the catch-all as 404 (`EventsPluginRemovalSession381Test`).
 
 ### 5. Migrations — **DECLARED**
 
@@ -90,19 +96,32 @@ Per-plugin seeders plus the niche configuration layer. (The pilot ships its `Dem
 
 Handle registration replacing the hard-coded defaults array on `EmailTemplate` (`forHandle()`); a registry the plugin contributes to, mirroring the widget registry pattern.
 
-### 8. Importer registration — **DECLARED**
+### 8. Importer registration — **PROVEN** (session 381)
 
-Registry entries (`app/Importers/*FieldRegistry.php` precedent) plus the Filament import-page pairing. Importers ship with their domain plugin.
+Importers ship with their domain plugin. A plugin declares an `App\Plugins\ImporterContribution` into the core `App\Plugins\ImporterRegistry` singleton (bound by `PluginServiceProvider`, populated at plugin `register()` — the surfaces-3/13 pattern). The contribution pairs a slug with:
+
+- **`pageClass` / `progressPageClass`** — the Filament wizard + progress pages (discovered via the plugin's surface-3 `pagesPath`; the registry only tells core's import surfaces which classes pair with which slug).
+- **`label` / `icon` / `modelType`** — the importer-hub card, including the blocked-while-a-session-is-reviewing state.
+- **`templateHeaders`** (closure) — the downloadable CSV template's header row, resolved by `CsvTemplateService::headersFor($slug)`.
+- **`fakeSourceFieldMap`** (closure) — the saved field map for the seeded demo import source.
+
+The per-importer composition (header prefixes, contact-match columns, transaction columns) is importer domain knowledge and lives in the plugin's closures, not in core consumers. Core consumers that resolve through the registry: the importer hub page + cards, the CSV-template streamer, the fixture runner's slug→progress-page pairing, and the demo-source/fake-CSV dev commands (which skip absent importers). Field-registry base classes (`FieldRegistry`, `AggregatingRegistry`, `DerivesFromFillable`) and the core-owned registries a plugin aggregates against (contact match, transactions) stay core. **Core-owned importers stay hard-wired in their consumers** — they can join the registry when their domains extract.
+
+Proven by: the events importer (session 381) — three field registries + the preset column mapper + both wizard pages shipped in `plugins/Events/`, every core import surface resolving through the registry (`EventsPluginSession381Test`); with the plugin line removed the hub shows no events card, `headersFor('events')` throws, the demo source is skipped, and the import pages are gone (`EventsPluginRemovalSession381Test`).
 
 ### 9. Contact extension — **DECLARED** *(normative rule settled)*
 
 **Relations on `contact_id`, only** (owner ruling, 376). Plugins attach data via plugin-owned tables keyed by `contact_id` — never columns on core tables, never schemaless-blob co-mingling. Core `Contact` stays minimal identity. The contact admin screen will expose a socket where plugins contribute panels (arc P3+).
 
-### 10. Events / hooks — **DECLARED**
+### 10. Events / hooks — **PROVEN** (session 381, scoped to the events slice)
 
-Laravel events for cross-plugin reaction (e.g. Donations fires, Mailchimp listens). Plugins listen to core and foundation-plugin events; they never call into another vertical.
+Laravel events for cross-plugin reaction. Plugins listen to core and foundation-plugin events; they never call into another vertical.
 
-**Named P5 work — the inbound payments inversion (decided at session 380, not silently deferred):** the Payments plugin's webhook controller still writes vertical models directly (Donation, EventRegistration, Membership, Purchase) — a plugin→core hard dependency, allowed today. When the first domain vertical extracts (arc P5), its webhook handlers invert to this surface: the Payments module emits typed payment-settled events and the vertical listens, scoped per-vertical as each one extracts. That is the moment a webhook write would otherwise become a forbidden plugin→vertical reach.
+**The inbound payments inversion (events slice, session 381 — arc P5):** core owns the typed event `App\Payments\Events\CheckoutSettled` (the Stripe Checkout Session object + its metadata). The Payments webhook keeps the metadata routing switch — the metadata key is written by the vertical at session creation; routing is payments infrastructure — but its `event_registration_checkout` branch body is now: dispatch `CheckoutSettled`, return 200. The Events plugin's listener (`Plugins\Events\Listeners\PromotePaidRegistrations`, registered from its provider) owns the entire former handler behavior: pending-promotion by `stripe_session_id`, contact resolution, one `Transaction::recordStripe` per order (a core write, allowed), one queued confirmation — idempotency identical (pending-only filter; a replay finds nothing pending). With Events absent the dispatch has no listener: 200, rows stay pending, data kept.
+
+**Per-vertical rollout:** the donation, membership, product, generic-fallback, invoice, refund, and failed-intent branches stay inline in Payments — each inverts to this surface when its vertical extracts. That is the moment a webhook write would otherwise become a forbidden foundation→vertical reach.
+
+Proven by: the dispatch/listener/replay/no-listener tests (`EventsPluginSession381Test`, `EventsPluginRemovalSession381Test`) and the pre-existing webhook behavioral net passing through the dispatch path with assertions unchanged (`MultiQuantityRegistrationTest`, `RegistrationConfirmationTest`).
 
 ### 11. Front-end assets — **PROVEN** (session 377)
 
@@ -130,7 +149,7 @@ Dependency rules (owner guideline, 376):
 - **Hard dependencies point only at core.**
 - **Optional dependencies point at foundation plugins** (composer `suggests`, never `require`), consumed through capability detection — e.g. Events without Payments = free events only.
 
-Proven by: five shipping vertical call sites (donation, product, membership, and both event-registration checkout controllers) plus `DashboardIntegrationStatusWidget` consuming `enabled('payments')`; the capability-semantics tests (`CapabilityRegistrySession380Test`) and the enabled/removal twin pair.
+Proven by: five shipping vertical call sites (donation, product, membership, and both event-registration checkout controllers) plus `DashboardIntegrationStatusWidget` consuming `enabled('payments')`; the capability-semantics tests (`CapabilityRegistrySession380Test`) and the enabled/removal twin pair. **First in-plugin vertical consumer (session 381):** both event-registration controllers now consume `enabled('payments')` + `CheckoutProvider` from inside `plugins/Events/` — the vertical→foundation soft dependency in the flesh, tested across the full presence matrix (both present: the suite; Events without Payments: free/comp work, paid degrades — `EventsWithoutPaymentsSession381Test`; Events absent: the surface vanishes, data kept).
 
 ---
 
@@ -147,6 +166,7 @@ Proven by: five shipping vertical call sites (donation, product, membership, and
 
 ## Changelog
 
+- **0.5.0** (session 381, 2026-08-18) — the first domain vertical (arc P5): the Events behavioral surface carved into `plugins/Events/` (controllers/routes, quantities service, observers, three mailables, reminders command + schedule, policy, `EventResource` + four pages, two import wizard pages, seven widgets, the events importer). Surface 3 **PROVEN** (first shipping admin-page plugin; extracted-vertical permission nuance recorded — pre-existing resource permissions stay core-seeded, the plugin declares none). Surface 4 **PROVEN** (three public routes with byte-identical names/URIs/middleware; front-of-house route-file half documented; the in-panel `routesFile` pull stays fixture-covered by SocketProbe, kept as a standing regression fixture). Surface 8 **PROVEN**: core `ImporterContribution` + `ImporterRegistry`; the hub, CSV-template streamer, fixture runner, and demo-source seeding resolve plugin importers through it; core importers stay hard-wired until their domains extract. Surface 10 **PROVEN scoped to the events slice**: core `App\Payments\Events\CheckoutSettled` dispatched by the Payments webhook's events branch; the Events listener owns fulfillment; remaining branches invert per-vertical. Surface 2 notes the at-scale widget contributor (7 widgets, nested `Widgets/` shape, partials + assets). Surface 13 notes the first in-plugin vertical consumer + the tested presence matrix. Standing guard `EventModuleBoundaryTest` bans `Plugins\Events\` in `app/` with zero allowlist; core reaches the events admin surface only by route name, and the landing-page factory lives in core (`App\Services\EventLandingPageFactory`) because the models are core at Stage A. Models/schema/permissions stay core (P7's squash redraw moves the schema).
 - **0.4.0** (session 380, 2026-08-18) — surface 13 PROVEN (arc P4): the Stripe rails carved into `plugins/Payments/`, the first shipping foundation plugin; core `CapabilityRegistry` (`provide`/`present`/`enabled`, lazy resolvers) bound by `PluginServiceProvider`; core-owned `App\Payments\Contracts\CheckoutProvider` + `PaymentModeProvider` contracts with the plugin binding implementations at `register()`; five vertical checkout call sites + the dashboard integration widget consume the API. Surface 1 gains its second shipping consumer (`PaymentsServiceProvider`). Surface 10 records the named P5 inbound-inversion plan. Standing guard `PaymentModuleBoundaryTest` bans the Stripe SDK, the plugin namespace, and `services.stripe.*` config reads in `app/` with zero allowlist. `laravel/cashier` removed (never used; two dead vendor routes dropped), `stripe/stripe-php` now a direct dependency.
 - **0.3.0** (session 379, 2026-08-18) — surfaces 3 and 4's mechanics built and fixture-tested (arc P3), statuses kept DECLARED per the honesty rule. Admin socket: `App\Plugins\AdminContribution` + `App\Plugins\PluginAdminRegistry` (populated at plugin `register()`, consumed by `AdminPanelProvider`) declaring Filament discovery paths, an in-panel route file (always wrapped in `Authenticate` by core), and permission names (seeded idempotently by `PermissionSeeder`, granted to no shipped role). Core's inline `->routes()` closure decomposed into per-feature `routes/admin/` files with exact route-list parity. The three session-376 Filament conventions made mechanical; convention 3 enforced by the standing guard `PluginAdminCssGuardTest` (no plugin admin CSS, widget SCSS exempt). Fixture: `tests/Fixtures/Plugins/SocketProbe/` with enabled + removal test mirrors.
 - **0.2.0** (session 378, 2026-08-18) — surface 2's template-purity rule made real across all 41 widgets (arc P2): the twelve model/auth/service-reaching templates routed through declared contracts; `dataContracts()` (named, multi-source) added alongside the singular `dataContract()`; new resolver arms `fund`, `membership_tier`, `navigation_menu`, `portal_member` and the `SOURCE_SERVICE` source (`setup_checklist`, `scrub_counts`, super-admin-gated in the arm); `site_name` added to the page-context token set; `WidgetDefinition::baseDir()` generalizes folder-relative resolution; standing guard `WidgetTemplateBoundaryTest` enforces the boundary with zero allowlist.
