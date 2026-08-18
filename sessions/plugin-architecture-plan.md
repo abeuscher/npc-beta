@@ -2,6 +2,8 @@
 
 **Status:** living document, written during session 376 as the discussion happens. Owner-corrected as it goes. This doc is the canonical output of the session and the spine of the sessions that follow it.
 
+**Arc progress (last update: session 377 close, 2026-08-18):** **P1 ✅ complete** — LogoGarden extracted to `plugins/LogoGarden/` as a self-registering module (`config/plugins.php` + core `PluginServiceProvider`); `docs/plugin-contract.md` v0.1.0 live (surfaces 1/2/11/12 PROVEN, rest DECLARED); thumbnail resolution generalized via `WidgetDefinition::thumbnailDir()`; standing guards extended to `plugins/*`; fast Pest 3116/0. **P2 next** (session 378, prompts drafted): close-of-377 survey found 12 of 41 templates reaching outside the contract path; the multi-contract question (one widget, several sources — EventRegistration) resolved by owner ruling: `dataContracts()` plural with named keys, single-contract widgets unchanged.
+
 ---
 
 ## 1. Motivation (settled)
@@ -124,7 +126,7 @@ The ladder is the de-risking order: each stage is independently valuable and ind
 
 No repo split, no build change. Formalize the contract and prove the boundaries are real; this is where entanglements surface cheaply.
 
-- **P1 (session 377) — Pilot widget as a self-registering module + plugin contract v0.1.** Extract one clean leaf widget (LogoGarden or BarChart — pick at session start; prefer one carrying both JS and SCSS so the asset seam is exercised end to end) out of the hardcoded 41-class registration into its own service provider, registered by discovery. Draft `docs/plugin-contract.md` from what the extraction teaches — the doc is the deliverable, the widget is the evidence.
+- **P1 (session 377) ✅ — Pilot widget as a self-registering module + plugin contract v0.1.** Done: LogoGarden (carried both JS and SCSS — asset seam exercised end to end) extracted to `plugins/LogoGarden/`, registered solely via its own provider through `config/plugins.php`; `docs/plugin-contract.md` v0.1.0 drafted from what the extraction proved. See the 377 log.
 - **P2 (378) — Make the widget boundary real across all 41.** The data-contract path becomes mandatory; the model-reaching templates (Nav, DonationForm, Portal set) are routed through declared contracts; a standing guard test (the `DesignGroupIntegrityTest` pattern) bans model calls in widget templates from then on.
 - **P3 (379) — Admin-shell sockets.** Decompose `AdminPanelProvider`'s inline route closure into per-feature route files; implement the three approved Filament conventions (nav groups + sort weight; permissions seeded at enable, super-admin-only by default; core-owned admin theme).
 - **P4 (380) — Payments foundation module.** Carve the Stripe rails (customer records, checkout, webhooks, receipt plumbing) into an in-repo module behind the capability-detection API; verticals call "is payments enabled?" instead of reaching for Stripe directly.
