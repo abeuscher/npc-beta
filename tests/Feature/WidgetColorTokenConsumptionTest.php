@@ -41,7 +41,10 @@ uses(TestCase::class)->group('design');
 function widgetScssColorHits(): array
 {
     $root  = dirname(__DIR__, 2);
-    $files = glob($root . '/app/Widgets/*/*.scss');
+    $files = array_merge(
+        glob($root . '/app/Widgets/*/*.scss'),
+        glob($root . '/plugins/*/*.scss'),
+    );
     sort($files);
 
     $hits = [];

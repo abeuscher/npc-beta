@@ -59,7 +59,10 @@ function widgetScssStripped(string $abs): array
 function widgetScssGutterHits(): array
 {
     $root  = dirname(__DIR__, 2);
-    $files = glob($root . '/app/Widgets/*/*.scss');
+    $files = array_merge(
+        glob($root . '/app/Widgets/*/*.scss'),
+        glob($root . '/plugins/*/*.scss'),
+    );
     sort($files);
 
     $hits = [];
@@ -78,7 +81,10 @@ function widgetScssGutterHits(): array
 function widgetScssViewportMediaHits(): array
 {
     $root  = dirname(__DIR__, 2);
-    $files = glob($root . '/app/Widgets/*/*.scss');
+    $files = array_merge(
+        glob($root . '/app/Widgets/*/*.scss'),
+        glob($root . '/plugins/*/*.scss'),
+    );
     sort($files);
 
     $hits = [];

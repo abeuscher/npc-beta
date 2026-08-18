@@ -2,7 +2,6 @@
 
 use App\Services\WidgetRegistry;
 use App\Widgets\Contracts\WidgetDefinition;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -19,10 +18,6 @@ const THUMBNAIL_BLANK_ALLOWLIST = [
     'setup_checklist',       // admin onboarding tool — no standalone preview
 ];
 
-function widgetThumbnailFolder(WidgetDefinition $def): string
-{
-    return Str::replaceLast('Definition', '', class_basename($def));
-}
 
 it('every widget ships a non-blank static thumbnail or is allowlisted', function () {
     // The deterministic 800×500 empty-canvas capture. A committed static.png
@@ -49,7 +44,7 @@ it('every widget ships a non-blank static thumbnail or is allowlisted', function
             continue;
         }
 
-        $path = base_path('app/Widgets/' . widgetThumbnailFolder($def) . '/thumbnails/static.png');
+        $path = $def->thumbnailDir() . '/static.png';
 
         expect(file_exists($path))->toBeTrue(
             "Widget [{$handle}] has no committed thumbnails/static.png."

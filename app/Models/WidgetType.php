@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -191,13 +190,12 @@ class WidgetType extends Model implements HasMedia
     public static function resolvePresetThumbnails(string $widgetHandle, array $presets): array
     {
         $def = app(\App\Services\WidgetRegistry::class)->find($widgetHandle);
-        $folder = $def ? Str::beforeLast(class_basename($def), 'Definition') : null;
 
-        return array_map(function (array $preset) use ($widgetHandle, $folder) {
+        return array_map(function (array $preset) use ($widgetHandle, $def) {
             $thumbnail = null;
-            if ($folder && isset($preset['handle'])) {
+            if ($def && isset($preset['handle'])) {
                 $file = 'preset-' . $preset['handle'] . '.png';
-                $path = base_path("app/Widgets/{$folder}/thumbnails/{$file}");
+                $path = $def->thumbnailDir() . '/' . $file;
                 if (file_exists($path)) {
                     $thumbnail = route('widget-thumbnails.show', ['handle' => $widgetHandle, 'file' => $file])
                         . '?v=' . filemtime($path);
@@ -218,8 +216,7 @@ class WidgetType extends Model implements HasMedia
         if (! $def) {
             return null;
         }
-        $folder = Str::beforeLast(class_basename($def), 'Definition');
-        $path = base_path("app/Widgets/{$folder}/thumbnails/static.png");
+        $path = $def->thumbnailDir() . '/static.png';
         if (! file_exists($path)) {
             return null;
         }

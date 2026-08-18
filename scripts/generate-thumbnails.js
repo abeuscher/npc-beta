@@ -17,7 +17,9 @@
  *   NODE_PATH="$(npm root -g)" node scripts/generate-thumbnails.js ...
  *
  * Widget list is sourced from `docker compose exec app php artisan widgets:manifest-json`.
- * Each PNG is written to `app/Widgets/{PascalFolder}/thumbnails/static.png`.
+ * Each PNG is written to the widget's own `thumbnails/static.png` — under
+ * `app/Widgets/{PascalFolder}/` for core widgets, `plugins/{PascalFolder}/`
+ * for in-repo plugin widgets.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -122,7 +124,12 @@ async function main() {
     let failures = 0;
 
     for (const handle of handles) {
-        const outDir = path.join(PROJECT_ROOT, 'app', 'Widgets', pascalFolder(handle), 'thumbnails');
+        // A widget lives either in core (app/Widgets/{Name}/) or as an
+        // in-repo plugin (plugins/{Name}/); write next to wherever it is.
+        const coreDir = path.join(PROJECT_ROOT, 'app', 'Widgets', pascalFolder(handle));
+        const pluginDir = path.join(PROJECT_ROOT, 'plugins', pascalFolder(handle));
+        const widgetDir = fs.existsSync(coreDir) ? coreDir : pluginDir;
+        const outDir = path.join(widgetDir, 'thumbnails');
 
         if (args.doStatic && manifest[handle]?.uses_manual_thumbnail) {
             // Widget opts out of automated static capture (WidgetDefinition::

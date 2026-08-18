@@ -200,7 +200,12 @@ it('never annotates a Tier-B field as inline-editable in any widget template', f
         'bar_chart'     => ['x_label', 'y_label'],
     ];
 
-    foreach (glob(base_path('app/Widgets/*/template.blade.php')) as $file) {
+    $widgetTemplates = array_merge(
+        glob(base_path('app/Widgets/*/template.blade.php')),
+        glob(base_path('plugins/*/template.blade.php')),
+    );
+
+    foreach ($widgetTemplates as $file) {
         $src = file_get_contents($file);
         foreach ($tierB as $widget => $keys) {
             foreach ($keys as $key) {

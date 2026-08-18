@@ -299,6 +299,17 @@ abstract class WidgetDefinition
         ];
     }
 
+    /**
+     * Absolute path to this widget's thumbnails directory. Resolved from the
+     * concrete definition class's own file location, so it holds wherever the
+     * widget lives — a core app/Widgets/{Name}/ folder or a plugins/{Name}/
+     * module — without per-widget overrides.
+     */
+    public function thumbnailDir(): string
+    {
+        return dirname((new \ReflectionClass(static::class))->getFileName()) . '/thumbnails';
+    }
+
     public function manifest(): array
     {
         return [

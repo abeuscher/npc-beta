@@ -5,7 +5,7 @@ use App\Models\CollectionItem;
 use App\Models\Page;
 use App\Models\WidgetType;
 use App\Services\WidgetRenderer;
-use App\Widgets\LogoGarden\LogoGardenDefinition;
+use Plugins\LogoGarden\LogoGardenDefinition;
 use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;

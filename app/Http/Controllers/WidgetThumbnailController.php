@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\WidgetRegistry;
-use Illuminate\Support\Str;
 
 class WidgetThumbnailController extends Controller
 {
@@ -19,9 +18,7 @@ class WidgetThumbnailController extends Controller
             abort(404);
         }
 
-        $folder = Str::beforeLast(class_basename($def), 'Definition');
-
-        $path = base_path("app/Widgets/{$folder}/thumbnails/{$file}");
+        $path = $def->thumbnailDir() . '/' . $file;
 
         if (! is_file($path)) {
             abort(404);

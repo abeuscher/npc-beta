@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\LogoGarden;
+namespace Plugins\LogoGarden;
 
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\ContentType;
@@ -32,10 +32,15 @@ class LogoGardenDefinition extends WidgetDefinition
     public function assets(): array
     {
         return [
-            'scss' => ['app/Widgets/LogoGarden/styles.scss'],
-            'js'   => ['app/Widgets/LogoGarden/script.js'],
+            'scss' => ['plugins/LogoGarden/styles.scss'],
+            'js'   => ['plugins/LogoGarden/script.js'],
             'libs' => ['swiper'],
         ];
+    }
+
+    public function template(): string
+    {
+        return "@include('plugin-logo-garden::template')";
     }
 
     public function schema(): array

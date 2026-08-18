@@ -29,7 +29,6 @@ use App\Widgets\EventsListing\EventsListingDefinition;
 use App\Widgets\Hero\HeroDefinition;
 use App\Widgets\Image\ImageDefinition;
 use App\Widgets\Logo\LogoDefinition;
-use App\Widgets\LogoGarden\LogoGardenDefinition;
 use App\Widgets\MapEmbed\MapEmbedDefinition;
 use App\Widgets\MembershipStatus\MembershipStatusDefinition;
 use App\Widgets\Memos\MemosDefinition;
@@ -109,7 +108,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new BarChartDefinition());
         $registry->register(new EventMiniCalendarDefinition());
         $registry->register(new CarouselDefinition());
-        $registry->register(new LogoGardenDefinition());
         $registry->register(new BoardMembersDefinition());
         $registry->register(new PricingChartDefinition());
         $registry->register(new TableDefinition());

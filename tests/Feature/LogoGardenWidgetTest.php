@@ -56,7 +56,7 @@ it('seeder creates logo_garden widget type with correct config and collections',
 // ── LogoGardenDemoSeeder ────────────────────────────────────────────────────
 
 it('logo garden demo seeder creates collection and items', function () {
-    $this->artisan('db:seed', ['--class' => 'App\\Widgets\\LogoGarden\\DemoSeeder']);
+    $this->artisan('db:seed', ['--class' => 'Plugins\\LogoGarden\\DemoSeeder']);
 
     $collection = Collection::where('handle', 'logo-garden-demo')->first();
 
@@ -78,8 +78,8 @@ it('logo garden demo seeder creates collection and items', function () {
 });
 
 it('logo garden demo seeder is idempotent', function () {
-    $this->artisan('db:seed', ['--class' => 'App\\Widgets\\LogoGarden\\DemoSeeder']);
-    $this->artisan('db:seed', ['--class' => 'App\\Widgets\\LogoGarden\\DemoSeeder']);
+    $this->artisan('db:seed', ['--class' => 'Plugins\\LogoGarden\\DemoSeeder']);
+    $this->artisan('db:seed', ['--class' => 'Plugins\\LogoGarden\\DemoSeeder']);
 
     expect(Collection::where('handle', 'logo-garden-demo')->count())->toBe(1);
     $collection = Collection::where('handle', 'logo-garden-demo')->first();

@@ -58,6 +58,7 @@ function publicSurfaceBladeFiles(): array
 
     $roots = [
         base_path('app/Widgets'),
+        base_path('plugins'),
         base_path('resources/views/components'),
         base_path('resources/views/layouts'),
         base_path('resources/views/portal'),
@@ -230,7 +231,12 @@ it('uses no x-html on the public surface', function () {
 it('registers every widget Alpine component referenced by a template', function () {
     $registered = [];
 
-    foreach (glob(base_path('app/Widgets/*/script.js')) as $script) {
+    $widgetScripts = array_merge(
+        glob(base_path('app/Widgets/*/script.js')),
+        glob(base_path('plugins/*/script.js')),
+    );
+
+    foreach ($widgetScripts as $script) {
         preg_match_all('/window\.NPWidgets\.([a-zA-Z0-9_$]+)\s*=/', file_get_contents($script), $matches);
         $registered = array_merge($registered, $matches[1]);
     }
@@ -240,7 +246,12 @@ it('registers every widget Alpine component referenced by a template', function 
 
     $missing = [];
 
-    foreach (glob(base_path('app/Widgets/*/template.blade.php')) as $template) {
+    $widgetTemplates = array_merge(
+        glob(base_path('app/Widgets/*/template.blade.php')),
+        glob(base_path('plugins/*/template.blade.php')),
+    );
+
+    foreach ($widgetTemplates as $template) {
         foreach (alpineDirectives(file_get_contents($template)) as $directive) {
             if ($directive['attr'] !== 'x-data') {
                 continue;

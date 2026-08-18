@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\LogoGarden;
+namespace Plugins\LogoGarden;
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
