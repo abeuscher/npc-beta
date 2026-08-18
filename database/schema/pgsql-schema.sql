@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ilFzAE7quyDV6ltMnDNYq44kvbr4UInpYcNcVoSUThdTfx6efb8B8PBflToGiod
+\restrict fgn6NToL1FDjYdIYuMgM0NE12HBgvuhCvmTSgbjT37ELugc11sLgxz1vKI8ys4E
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -335,7 +335,8 @@ CREATE TABLE public.donations (
     external_id character varying(255),
     custom_fields jsonb,
     source character varying(255) DEFAULT 'stripe_webhook'::character varying NOT NULL,
-    organization_id uuid
+    organization_id uuid,
+    acknowledged_at timestamp(0) without time zone
 );
 
 
@@ -1586,7 +1587,8 @@ CREATE TABLE public.ticket_tiers (
     capacity integer,
     sort_order integer DEFAULT 0 NOT NULL,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    is_complimentary boolean DEFAULT false NOT NULL
 );
 
 
@@ -1636,7 +1638,10 @@ CREATE TABLE public.users (
     remember_token character varying(100),
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    is_active boolean DEFAULT true NOT NULL
+    is_active boolean DEFAULT true NOT NULL,
+    two_factor_secret text,
+    two_factor_recovery_codes text,
+    two_factor_confirmed_at timestamp(0) without time zone
 );
 
 
@@ -3858,13 +3863,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ilFzAE7quyDV6ltMnDNYq44kvbr4UInpYcNcVoSUThdTfx6efb8B8PBflToGiod
+\unrestrict fgn6NToL1FDjYdIYuMgM0NE12HBgvuhCvmTSgbjT37ELugc11sLgxz1vKI8ys4E
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict EQLoND8q8O3IeGMz3elDJHtQ3FeqJ92aXjSGj3Ifg5muEmg4xpmyAzQRDLH5vws
+\restrict 8E77B3bdif6dNzMYNCBfzRvCXIjUzUTHf4A2YBheeUmc3JtyCJXo2GjulECf8Oo
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3997,6 +4002,9 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 109	2026_05_22_130000_relocate_media_to_content_addressed_storage	17
 110	2026_05_30_120000_add_sold_out_to_events_table	18
 111	2026_05_30_130000_add_locked_to_pages_table	19
+112	2026_06_12_000001_add_two_factor_columns_to_users_table	20
+113	2026_07_17_000001_add_acknowledged_at_to_donations_table	21
+114	2026_07_23_000001_add_is_complimentary_to_ticket_tiers_table	22
 \.
 
 
@@ -4004,12 +4012,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 111, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 114, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict EQLoND8q8O3IeGMz3elDJHtQ3FeqJ92aXjSGj3Ifg5muEmg4xpmyAzQRDLH5vws
+\unrestrict 8E77B3bdif6dNzMYNCBfzRvCXIjUzUTHf4A2YBheeUmc3JtyCJXo2GjulECf8Oo
 
