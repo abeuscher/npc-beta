@@ -169,7 +169,7 @@
                     <h3 class="emc-events__heading">{{ \Illuminate\Support\Carbon::parse($key)->format('l, F j') }}</h3>
                     <ul class="emc-events__list">
                         @foreach ($dayRows as $e)
-                            @include('widgets::EventMiniCalendar.event-row', ['e' => $e, 'showDescription' => $showDescription, 'showDate' => false])
+                            @include('plugin-events-widgets::EventMiniCalendar.event-row', ['e' => $e, 'showDescription' => $showDescription, 'showDate' => false])
                         @endforeach
                     </ul>
                 </div>
@@ -183,7 +183,7 @@
                     @if (count($rows) > 0)
                         <ul class="emc-events__list">
                             @foreach ($rows as $e)
-                                @include('widgets::EventMiniCalendar.event-row', ['e' => $e, 'showDescription' => $showDescription, 'showDate' => true])
+                                @include('plugin-events-widgets::EventMiniCalendar.event-row', ['e' => $e, 'showDescription' => $showDescription, 'showDate' => true])
                             @endforeach
                         </ul>
                     @else

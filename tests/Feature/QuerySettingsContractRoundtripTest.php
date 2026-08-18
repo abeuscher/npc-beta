@@ -11,7 +11,7 @@ use App\Widgets\BarChart\BarChartDefinition;
 use App\Widgets\BlogListing\BlogListingDefinition;
 use App\Widgets\BoardMembers\BoardMembersDefinition;
 use App\Widgets\Carousel\CarouselDefinition;
-use App\Widgets\EventsListing\EventsListingDefinition;
+use Plugins\Events\Widgets\EventsListing\EventsListingDefinition;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Models\Product;
 use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;

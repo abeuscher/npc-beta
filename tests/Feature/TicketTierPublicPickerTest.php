@@ -205,7 +205,7 @@ it('projects tiers onto the EventRegistration contract with remaining_capacity',
     $event = Event::factory()->paid(25.00, 10)->create(['status' => 'published']);
     $tier  = $event->ticketTiers()->first();
 
-    $contract = (new \App\Widgets\EventRegistration\EventRegistrationDefinition())
+    $contract = (new \Plugins\Events\Widgets\EventRegistration\EventRegistrationDefinition())
         ->dataContract(['event_slug' => $event->slug]);
 
     $context = new \App\WidgetPrimitive\SlotContext(new \App\WidgetPrimitive\AmbientContexts\PageAmbientContext());
@@ -227,7 +227,7 @@ it('projects is_complimentary onto the EventRegistration contract', function () 
     $event = Event::factory()->create(['status' => 'published']);
     TicketTier::factory()->for($event)->create(['name' => 'Comp', 'price' => 0, 'is_complimentary' => true]);
 
-    $contract = (new \App\Widgets\EventRegistration\EventRegistrationDefinition())
+    $contract = (new \Plugins\Events\Widgets\EventRegistration\EventRegistrationDefinition())
         ->dataContract(['event_slug' => $event->slug]);
 
     $context = new \App\WidgetPrimitive\SlotContext(new \App\WidgetPrimitive\AmbientContexts\PageAmbientContext());

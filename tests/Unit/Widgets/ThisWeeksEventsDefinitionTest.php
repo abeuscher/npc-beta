@@ -1,6 +1,6 @@
 <?php
 
-use App\Widgets\ThisWeeksEvents\ThisWeeksEventsDefinition;
+use Plugins\Events\Widgets\ThisWeeksEvents\ThisWeeksEventsDefinition;
 use App\WidgetPrimitive\DataContract;
 use App\WidgetPrimitive\Source;
 

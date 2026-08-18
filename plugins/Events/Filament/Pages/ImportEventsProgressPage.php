@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace Plugins\Events\Filament\Pages;
 
 use App\Filament\Pages\Concerns\ImportDryRunRollback;
 use App\Filament\Pages\Concerns\InteractsWithImportProgress;
+use App\Filament\Pages\ImporterPage;
 use App\Services\EventLandingPageFactory;
-use App\Importers\EventImportFieldRegistry;
+use Plugins\Events\Importers\EventImportFieldRegistry;
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventRegistration;
@@ -24,7 +25,7 @@ class ImportEventsProgressPage extends Page
 {
     use InteractsWithImportProgress;
 
-    protected static string $view = 'filament.pages.import-events-progress';
+    protected static string $view = 'plugin-events::filament.import-events-progress';
 
     protected static ?string $title = 'Importing Events…';
 

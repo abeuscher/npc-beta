@@ -49,14 +49,20 @@ class GenerateFakeImportCsvsCommand extends Command
         $contacts = $composer->composeContacts($contactCount);
         $emails   = $composer->extractContactEmails($contacts);
 
-        $events    = $composer->composeEvents($eventRows, $emails);
+        // The events importer ships with the Events plugin (contract surface
+        // 8); no contribution registered means no events template to target.
+        $eventsImporter = app(\App\Plugins\ImporterRegistry::class)->find('events');
+
+        $events    = $eventsImporter ? $composer->composeEvents($eventRows, $emails) : [];
         $donations = $composer->composeDonations($donationCount, $emails);
         $memberships = $composer->composeMemberships($membershipCount, $emails);
         $invoices  = $composer->composeInvoiceDetails($invoiceRows, $emails);
         $notes     = $composer->composeNotes($noteCount, $emails);
 
         $this->writeCsv($out . '/contacts.csv', CsvTemplateService::contactHeaders(), $contacts, 'contacts');
-        $this->writeCsv($out . '/events.csv', CsvTemplateService::eventHeaders(), $events, 'events');
+        if ($eventsImporter) {
+            $this->writeCsv($out . '/events.csv', CsvTemplateService::headersFor('events'), $events, 'events');
+        }
         $this->writeCsv($out . '/donations.csv', CsvTemplateService::donationHeaders(), $donations, 'donations');
         $this->writeCsv($out . '/memberships.csv', CsvTemplateService::membershipHeaders(), $memberships, 'memberships');
         $this->writeCsv($out . '/invoice_details.csv', CsvTemplateService::invoiceDetailHeaders(), $invoices, 'invoice_details');

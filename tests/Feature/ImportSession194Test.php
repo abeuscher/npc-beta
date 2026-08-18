@@ -1,7 +1,7 @@
 <?php
 
 use App\Filament\Pages\ImportDonationsProgressPage;
-use App\Filament\Pages\ImportEventsProgressPage;
+use Plugins\Events\Filament\Pages\ImportEventsProgressPage;
 use App\Filament\Pages\ImportInvoiceDetailsProgressPage;
 use App\Filament\Pages\ImportMembershipsProgressPage;
 use App\Models\Contact;

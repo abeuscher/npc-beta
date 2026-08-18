@@ -263,7 +263,7 @@
                             @if ($sideBySide)
                                 <ul class="events-list__rows" style="grid-template-columns: repeat({{ $columns }}, 1fr);">
                                     @foreach ($group['items'] as $item)
-                                        @include('widgets::EventsListing.row', ['item' => $item])
+                                        @include('plugin-events-widgets::EventsListing.row', ['item' => $item])
                                     @endforeach
                                 </ul>
                             @else

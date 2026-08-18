@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Enums\ImportModelType;
 use App\Models\ImportSession;
+use App\Plugins\ImporterRegistry;
 use App\Services\Import\CsvTemplateService;
 use App\Services\Import\ImportSessionActions;
 use App\Services\Import\ImportSessionPreview;
@@ -48,11 +49,6 @@ class ImporterPage extends Page implements HasTable
         return CsvTemplateService::stream('contacts');
     }
 
-    public function downloadEventsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
-    {
-        return CsvTemplateService::stream('events');
-    }
-
     public function downloadDonationsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         return CsvTemplateService::stream('donations');
@@ -76,6 +72,37 @@ class ImporterPage extends Page implements HasTable
     public function downloadOrganizationsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         return CsvTemplateService::stream('organizations');
+    }
+
+    /**
+     * Template download for a plugin-contributed importer (contract surface
+     * 8) — the slug is validated against the registry, never used raw.
+     */
+    public function downloadPluginTemplate(string $slug): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_if(app(ImporterRegistry::class)->find($slug) === null, 404);
+
+        return CsvTemplateService::stream($slug);
+    }
+
+    /**
+     * Plugin-contributed importers for the hub cards and template-download
+     * row. Each entry: slug, label, icon, url, modelType.
+     *
+     * @return array<int, array{slug: string, label: string, icon: string, url: string, modelType: string}>
+     */
+    public function getPluginImporters(): array
+    {
+        return array_values(array_map(
+            fn ($c): array => [
+                'slug'      => $c->slug,
+                'label'     => $c->label,
+                'icon'      => $c->icon,
+                'url'       => $c->pageClass::getUrl(),
+                'modelType' => $c->modelType,
+            ],
+            app(ImporterRegistry::class)->all(),
+        ));
     }
 
     public function getBlockedTypes(): array

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\PortalEventRegistrations;
+namespace Plugins\Events\Widgets\PortalEventRegistrations;
 
 use App\WidgetPrimitive\DataContract;
 use App\Widgets\Contracts\WidgetDefinition;
@@ -11,6 +11,11 @@ class PortalEventRegistrationsDefinition extends WidgetDefinition
     public function handle(): string
     {
         return 'portal_event_registrations';
+    }
+
+    public function template(): string
+    {
+        return "@include('plugin-events-widgets::PortalEventRegistrations.template')";
     }
 
     public function label(): string

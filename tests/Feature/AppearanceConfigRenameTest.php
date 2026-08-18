@@ -247,7 +247,7 @@ it('blog_listing widget renders without background_color or text_color reads', f
 
 it('events_listing widget renders without background_color or text_color reads', function () {
     $html = Blade::render(
-        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
+        file_get_contents(base_path('plugins/Events/Widgets/EventsListing/template.blade.php')),
         [
             'config' => [
                 'heading'          => 'Events',

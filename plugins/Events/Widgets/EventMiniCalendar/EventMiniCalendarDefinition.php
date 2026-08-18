@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\EventMiniCalendar;
+namespace Plugins\Events\Widgets\EventMiniCalendar;
 
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
@@ -11,6 +11,11 @@ class EventMiniCalendarDefinition extends WidgetDefinition
     public function handle(): string
     {
         return 'event_mini_calendar';
+    }
+
+    public function template(): string
+    {
+        return "@include('plugin-events-widgets::EventMiniCalendar.template')";
     }
 
     public function label(): string
@@ -38,8 +43,8 @@ class EventMiniCalendarDefinition extends WidgetDefinition
     public function assets(): array
     {
         return [
-            'scss' => ['app/Widgets/EventMiniCalendar/styles.scss'],
-            'js'   => ['app/Widgets/EventMiniCalendar/script.js'],
+            'scss' => ['plugins/Events/Widgets/EventMiniCalendar/styles.scss'],
+            'js'   => ['plugins/Events/Widgets/EventMiniCalendar/script.js'],
         ];
     }
 

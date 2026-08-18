@@ -36,7 +36,7 @@ it('each seeded field map covers every canonical CSV header', function () {
 
     $pairs = [
         'Demo Fake Data — Contacts'        => ['contacts_field_map',    CsvTemplateService::contactHeaders(),        $contactIgnored],
-        'Demo Fake Data — Events'          => ['events_field_map',      CsvTemplateService::eventHeaders(),          []],
+        'Demo Fake Data — Events'          => ['events_field_map',      CsvTemplateService::headersFor('events'),          []],
         'Demo Fake Data — Donations'       => ['donations_field_map',   CsvTemplateService::donationHeaders(),       []],
         'Demo Fake Data — Memberships'     => ['memberships_field_map', CsvTemplateService::membershipHeaders(),     []],
         'Demo Fake Data — Invoice Details' => ['invoices_field_map',    CsvTemplateService::invoiceDetailHeaders(),  []],

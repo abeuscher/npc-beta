@@ -2,11 +2,11 @@
 
 use App\Importers\ContactFieldRegistry;
 use App\Importers\DonationFieldRegistry;
-use App\Importers\EventFieldRegistry;
+use Plugins\Events\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
 use App\Importers\NoteFieldRegistry;
-use App\Importers\RegistrationFieldRegistry;
+use Plugins\Events\Importers\RegistrationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

@@ -124,11 +124,16 @@ async function main() {
     let failures = 0;
 
     for (const handle of handles) {
-        // A widget lives either in core (app/Widgets/{Name}/) or as an
-        // in-repo plugin (plugins/{Name}/); write next to wherever it is.
+        // A widget lives in core (app/Widgets/{Name}/), as a single-widget
+        // in-repo plugin (plugins/{Name}/), or nested inside a vertical plugin
+        // (plugins/{Plugin}/Widgets/{Name}/); write next to wherever it is.
         const coreDir = path.join(PROJECT_ROOT, 'app', 'Widgets', pascalFolder(handle));
         const pluginDir = path.join(PROJECT_ROOT, 'plugins', pascalFolder(handle));
-        const widgetDir = fs.existsSync(coreDir) ? coreDir : pluginDir;
+        const nestedDirs = fs.readdirSync(path.join(PROJECT_ROOT, 'plugins'), { withFileTypes: true })
+            .filter((d) => d.isDirectory())
+            .map((d) => path.join(PROJECT_ROOT, 'plugins', d.name, 'Widgets', pascalFolder(handle)))
+            .filter((p) => fs.existsSync(p));
+        const widgetDir = fs.existsSync(coreDir) ? coreDir : (fs.existsSync(pluginDir) ? pluginDir : (nestedDirs[0] ?? pluginDir));
         const outDir = path.join(widgetDir, 'thumbnails');
 
         if (args.doStatic && manifest[handle]?.uses_manual_thumbnail) {

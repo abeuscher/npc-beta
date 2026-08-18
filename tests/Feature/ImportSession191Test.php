@@ -2,14 +2,18 @@
 
 use App\Importers\ContactFieldRegistry;
 use App\Importers\DonationFieldRegistry;
-use App\Importers\EventFieldRegistry;
+use Plugins\Events\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
-use App\Importers\RegistrationFieldRegistry;
+use Plugins\Events\Importers\RegistrationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;
 use App\Services\Import\CsvTemplateService;
 use App\Services\Import\FieldMapper;
 use App\Services\Import\NoiseDetector;
+
+// Boots the app (no DB): the events template shape is the Events plugin's
+// importer contribution (contract surface 8), resolved via the container.
+uses(Tests\TestCase::class);
 
 // ─── CSV Template tests ──────────────────────────────────────────────────
 
@@ -29,7 +33,7 @@ it('contacts template has the expected column count and includes key fields', fu
 });
 
 it('events template includes event, registration, contact, and transaction columns', function () {
-    $headers = CsvTemplateService::eventHeaders();
+    $headers = CsvTemplateService::headersFor('events');
 
     // Should have event fields + registration fields + 3 contact match + transaction fields
     $expected = count(EventFieldRegistry::options())
@@ -75,16 +79,8 @@ it('invoice details template includes invoice and contact match columns', functi
 });
 
 it('all five template types produce non-empty header arrays', function () {
-    $methods = [
-        'contacts'        => 'contactHeaders',
-        'events'          => 'eventHeaders',
-        'donations'       => 'donationHeaders',
-        'memberships'     => 'membershipHeaders',
-        'invoice_details' => 'invoiceDetailHeaders',
-    ];
-
-    foreach ($methods as $type => $method) {
-        $headers = CsvTemplateService::{$method}();
+    foreach (['contacts', 'events', 'donations', 'memberships', 'invoice_details'] as $type) {
+        $headers = CsvTemplateService::headersFor($type);
         expect($headers)->not->toBeEmpty("Template type {$type} produced empty headers");
     }
 });

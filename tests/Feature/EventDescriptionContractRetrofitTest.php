@@ -4,7 +4,7 @@ use App\Models\Event;
 use App\Models\Page;
 use App\Models\WidgetType;
 use App\Services\WidgetRenderer;
-use App\Widgets\EventDescription\EventDescriptionDefinition;
+use Plugins\Events\Widgets\EventDescription\EventDescriptionDefinition;
 use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;

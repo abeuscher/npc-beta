@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\EventsListing;
+namespace Plugins\Events\Widgets\EventsListing;
 
 use App\Support\DateFormat;
 use App\Widgets\Contracts\WidgetDefinition;
@@ -12,6 +12,11 @@ class EventsListingDefinition extends WidgetDefinition
     public function handle(): string
     {
         return 'events_listing';
+    }
+
+    public function template(): string
+    {
+        return "@include('plugin-events-widgets::EventsListing.template')";
     }
 
     public function label(): string
@@ -37,8 +42,8 @@ class EventsListingDefinition extends WidgetDefinition
     public function assets(): array
     {
         return [
-            'scss' => ['app/Widgets/EventsListing/styles.scss', 'app/Widgets/BlogPager/styles.scss'],
-            'js'   => ['app/Widgets/EventsListing/script.js'],
+            'scss' => ['plugins/Events/Widgets/EventsListing/styles.scss', 'app/Widgets/BlogPager/styles.scss'],
+            'js'   => ['plugins/Events/Widgets/EventsListing/script.js'],
             'libs' => ['swiper'],
         ];
     }

@@ -3,7 +3,6 @@
 namespace App\Services\Import;
 
 use App\Filament\Pages\ImportDonationsProgressPage;
-use App\Filament\Pages\ImportEventsProgressPage;
 use App\Filament\Pages\ImportInvoiceDetailsProgressPage;
 use App\Filament\Pages\ImportMembershipsProgressPage;
 use App\Filament\Pages\ImportNotesProgressPage;
@@ -21,15 +20,24 @@ use RuntimeException;
 
 class FixtureRunner
 {
+    /**
+     * Core importers' progress pages. Plugin importers (docs/plugin-contract.md
+     * surface 8) pair theirs through the ImporterRegistry — see pageFor().
+     */
     private const PAGE_FOR_IMPORTER = [
         'contacts'        => ImportProgressPage::class,
-        'events'          => ImportEventsProgressPage::class,
         'donations'       => ImportDonationsProgressPage::class,
         'memberships'     => ImportMembershipsProgressPage::class,
         'invoice_details' => ImportInvoiceDetailsProgressPage::class,
         'notes'           => ImportNotesProgressPage::class,
         'organizations'   => ImportOrganizationsProgressPage::class,
     ];
+
+    private function pageFor(string $importer): ?string
+    {
+        return self::PAGE_FOR_IMPORTER[$importer]
+            ?? app(\App\Plugins\ImporterRegistry::class)->find($importer)?->progressPageClass;
+    }
 
     public function __construct(
         private BuilderRegistry $registry,
@@ -83,12 +91,12 @@ class FixtureRunner
 
     private function runProcessOneRow(string $importer, string $csvPath, array $manifest): array
     {
-        if (! isset(self::PAGE_FOR_IMPORTER[$importer])) {
+        $pageClass = $this->pageFor($importer);
+        if ($pageClass === null) {
             throw new RuntimeException("Unknown importer: {$importer}");
         }
 
-        $builder    = $this->registry->for($importer);
-        $pageClass  = self::PAGE_FOR_IMPORTER[$importer];
+        $builder = $this->registry->for($importer);
 
         $this->seedCustomFieldDefs($importer, $manifest['custom_field_columns'] ?? []);
 

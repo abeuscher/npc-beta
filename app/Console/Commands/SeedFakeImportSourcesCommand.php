@@ -4,13 +4,12 @@ namespace App\Console\Commands;
 
 use App\Importers\ContactFieldRegistry;
 use App\Importers\DonationFieldRegistry;
-use App\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
 use App\Importers\NoteFieldRegistry;
-use App\Importers\RegistrationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;
 use App\Models\ImportSource;
+use App\Plugins\ImporterRegistry;
 use Illuminate\Console\Command;
 
 class SeedFakeImportSourcesCommand extends Command
@@ -37,13 +36,18 @@ class SeedFakeImportSourcesCommand extends Command
             'contacts_match_key_column' => 'email',
         ], $force);
 
-        $this->upsert(self::EVENTS_LABEL, [
-            'events_field_map'         => $this->eventsFieldMap(),
-            'events_custom_field_map'  => [],
-            'events_match_key'         => 'event:external_id',
-            'events_match_key_column'  => 'event external id',
-            'events_contact_match_key' => 'contact:email',
-        ], $force);
+        // The events field map is the Events plugin's importer contribution
+        // (contract surface 8); no contribution registered = no events source.
+        $eventsImporter = app(ImporterRegistry::class)->find('events');
+        if ($eventsImporter !== null) {
+            $this->upsert(self::EVENTS_LABEL, [
+                'events_field_map'         => ($eventsImporter->fakeSourceFieldMap)(),
+                'events_custom_field_map'  => [],
+                'events_match_key'         => 'event:external_id',
+                'events_match_key_column'  => 'event external id',
+                'events_contact_match_key' => 'contact:email',
+            ], $force);
+        }
 
         $this->upsert(self::DONATIONS_LABEL, [
             'donations_field_map'         => $this->donationsFieldMap(),
@@ -96,24 +100,6 @@ class SeedFakeImportSourcesCommand extends Command
         $map = [];
         foreach (ContactFieldRegistry::fields() as $key => $def) {
             $map[strtolower($def['label'])] = $key;
-        }
-        return $map;
-    }
-
-    private function eventsFieldMap(): array
-    {
-        $map = [];
-        foreach (EventFieldRegistry::fields() as $key => $def) {
-            $map[strtolower('Event ' . $def['label'])] = "event:{$key}";
-        }
-        foreach (RegistrationFieldRegistry::fields() as $key => $def) {
-            $map[strtolower('Registration ' . $def['label'])] = "registration:{$key}";
-        }
-        $map['contact email']       = 'contact:email';
-        $map['contact external id'] = 'contact:external_id';
-        $map['contact phone']       = 'contact:phone';
-        foreach (TransactionFieldRegistry::fields() as $key => $def) {
-            $map[strtolower($def['label'])] = "transaction:{$key}";
         }
         return $map;
     }

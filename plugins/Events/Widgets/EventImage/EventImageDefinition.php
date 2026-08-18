@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\EventImage;
+namespace Plugins\Events\Widgets\EventImage;
 
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
@@ -11,6 +11,11 @@ class EventImageDefinition extends WidgetDefinition
     public function handle(): string
     {
         return 'event_image';
+    }
+
+    public function template(): string
+    {
+        return "@include('plugin-events-widgets::EventImage.template')";
     }
 
     public function label(): string

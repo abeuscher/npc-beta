@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Importers;
+namespace Plugins\Events\Importers;
 
 use App\Importers\Concerns\AggregatingRegistry;
+use App\Importers\ContactFieldRegistry;
+use App\Importers\TransactionFieldRegistry;
 
 /**
  * Aggregates the Event / Registration / Contact-match / Transaction field

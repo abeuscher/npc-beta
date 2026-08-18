@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\Import\EventFieldMapper;
+use Plugins\Events\Importers\EventFieldMapper;
 
 it('generic preset maps every existing floor alias to its destination', function () {
     $mapper = new EventFieldMapper();

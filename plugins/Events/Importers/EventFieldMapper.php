@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Import;
+namespace Plugins\Events\Importers;
 
 class EventFieldMapper
 {

@@ -4,13 +4,12 @@ namespace App\Services\Import;
 
 use App\Importers\ContactFieldRegistry;
 use App\Importers\DonationFieldRegistry;
-use App\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
 use App\Importers\NoteFieldRegistry;
 use App\Importers\OrganizationFieldRegistry;
-use App\Importers\RegistrationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;
+use App\Plugins\ImporterRegistry;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -32,33 +31,6 @@ class CsvTemplateService
         $headers[] = 'Organization';
         $headers[] = 'Tags';
         $headers[] = 'Notes';
-
-        return $headers;
-    }
-
-    public static function eventHeaders(): array
-    {
-        $headers = [];
-
-        foreach (EventFieldRegistry::options() as $label) {
-            $headers[] = "Event {$label}";
-        }
-
-        foreach (RegistrationFieldRegistry::options() as $label) {
-            $headers[] = "Registration {$label}";
-        }
-
-        // Contact match columns
-        $headers[] = 'Contact Email';
-        $headers[] = 'Contact External ID';
-        $headers[] = 'Contact Phone';
-
-        // Transaction columns — labels are already self-disambiguating
-        // ('Transaction ID (external)', 'Transaction Amount') so no prefix
-        // is applied here.
-        foreach (TransactionFieldRegistry::options() as $label) {
-            $headers[] = $label;
-        }
 
         return $headers;
     }
@@ -150,18 +122,34 @@ class CsvTemplateService
         return $headers;
     }
 
-    public static function stream(string $type): StreamedResponse
+    /**
+     * Header row for a template type: the core types are hard-wired here;
+     * plugin importers (docs/plugin-contract.md surface 8) contribute theirs
+     * through the ImporterRegistry.
+     */
+    public static function headersFor(string $type): array
     {
-        $headers = match ($type) {
+        return match ($type) {
             'contacts'        => static::contactHeaders(),
-            'events'          => static::eventHeaders(),
             'donations'       => static::donationHeaders(),
             'memberships'     => static::membershipHeaders(),
             'invoice_details' => static::invoiceDetailHeaders(),
             'notes'           => static::noteHeaders(),
             'organizations'   => static::organizationHeaders(),
-            default           => throw new \InvalidArgumentException("Unknown template type: {$type}"),
+            default           => (function () use ($type): array {
+                $contribution = app(ImporterRegistry::class)->find($type);
+                if ($contribution === null) {
+                    throw new \InvalidArgumentException("Unknown template type: {$type}");
+                }
+
+                return ($contribution->templateHeaders)();
+            })(),
         };
+    }
+
+    public static function stream(string $type): StreamedResponse
+    {
+        $headers = static::headersFor($type);
 
         $filename = str_replace('_', '-', $type) . '-template.csv';
 

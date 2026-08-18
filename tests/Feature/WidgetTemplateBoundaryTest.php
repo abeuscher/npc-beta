@@ -39,6 +39,9 @@ function widgetBoundaryScanTargets(): array
     $targets = array_merge(
         glob(base_path('app/Widgets/*/template.blade.php')) ?: [],
         glob(base_path('plugins/*/template.blade.php')) ?: [],
+        // Vertical plugins nest their widget folders (plugins/Events/Widgets/*
+        // since session 381); single-widget plugins keep templates at the root.
+        glob(base_path('plugins/*/Widgets/*/template.blade.php')) ?: [],
     );
 
     $sharedDir = base_path('resources/views/widget-shared');

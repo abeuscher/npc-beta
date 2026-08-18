@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\EventDescription;
+namespace Plugins\Events\Widgets\EventDescription;
 
 use App\Support\DateFormat;
 use App\Widgets\Contracts\WidgetDefinition;
@@ -12,6 +12,11 @@ class EventDescriptionDefinition extends WidgetDefinition
     public function handle(): string
     {
         return 'event_description';
+    }
+
+    public function template(): string
+    {
+        return "@include('plugin-events-widgets::EventDescription.template')";
     }
 
     public function label(): string

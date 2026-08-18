@@ -5,7 +5,7 @@ use App\Models\EventRegistration;
 use App\Models\Page;
 use App\Models\WidgetType;
 use App\Services\WidgetRenderer;
-use App\Widgets\EventRegistration\EventRegistrationDefinition;
+use Plugins\Events\Widgets\EventRegistration\EventRegistrationDefinition;
 use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;

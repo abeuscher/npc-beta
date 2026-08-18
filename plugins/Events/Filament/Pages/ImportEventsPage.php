@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace Plugins\Events\Filament\Pages;
 
 use App\Enums\ImportModelType;
 use App\Filament\Pages\Concerns\InteractsWithImportWizard;
-use App\Importers\EventImportFieldRegistry;
+use App\Filament\Pages\ImporterPage;
+use Plugins\Events\Importers\EventImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
 use App\Models\ImportSource;
-use App\Services\Import\EventFieldMapper;
+use Plugins\Events\Importers\EventFieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
@@ -24,7 +25,7 @@ class ImportEventsPage extends Page
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
-    protected static string $view = 'filament.pages.import-events';
+    protected static string $view = 'plugin-events::filament.import-events';
 
     protected static ?string $title = 'Import Events';
 

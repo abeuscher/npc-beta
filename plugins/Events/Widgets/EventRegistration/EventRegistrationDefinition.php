@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\EventRegistration;
+namespace Plugins\Events\Widgets\EventRegistration;
 
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
@@ -11,6 +11,11 @@ class EventRegistrationDefinition extends WidgetDefinition
     public function handle(): string
     {
         return 'event_registration';
+    }
+
+    public function template(): string
+    {
+        return "@include('plugin-events-widgets::EventRegistration.template')";
     }
 
     public function label(): string
@@ -85,7 +90,7 @@ class EventRegistrationDefinition extends WidgetDefinition
     public function assets(): array
     {
         return [
-            'js' => ['app/Widgets/EventRegistration/script.js'],
+            'js' => ['plugins/Events/Widgets/EventRegistration/script.js'],
         ];
     }
 

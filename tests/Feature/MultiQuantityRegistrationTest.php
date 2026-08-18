@@ -77,7 +77,7 @@ it('projector exposes remaining_capacity for finite tiers and null for unlimited
         'quantity'       => 3,
     ]);
 
-    $contract = (new \App\Widgets\EventRegistration\EventRegistrationDefinition())
+    $contract = (new \Plugins\Events\Widgets\EventRegistration\EventRegistrationDefinition())
         ->dataContract(['event_slug' => $event->slug]);
     $context = new \App\WidgetPrimitive\SlotContext(new \App\WidgetPrimitive\AmbientContexts\PageAmbientContext());
     $dto = app(\App\WidgetPrimitive\ContractResolver::class)->resolve([$contract], $context)[0];

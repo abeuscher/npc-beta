@@ -25,24 +25,28 @@
                 </a>
             @endif
 
-            {{-- Import Events and Event Registrations --}}
-            @if (in_array('event', $blockedTypes))
-                <div class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-60 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
-                    <x-heroicon-o-calendar-days class="h-10 w-10 text-gray-400" />
-                    <span class="text-base font-semibold text-gray-400">Import Events and Event Registrations</span>
-                    <span class="text-xs text-gray-400">A previous events import is awaiting review. Approve or roll it back before starting a new one.
-                        @if (auth()->user()?->can('review_imports'))
-                            <a href="#review-queue" class="underline text-primary-500">Go to review queue</a>
-                        @endif
-                    </span>
-                </div>
-            @else
-                <a href="{{ \App\Filament\Pages\ImportEventsPage::getUrl() }}"
-                   class="flex flex-col items-center gap-3 rounded-xl border-2 border-primary-300 bg-white p-6 text-center shadow-sm transition hover:border-primary-500 hover:shadow-md dark:bg-gray-900 dark:border-primary-700 dark:hover:border-primary-400">
-                    <x-heroicon-o-calendar-days class="h-10 w-10 text-primary-500" />
-                    <span class="text-base font-semibold">Import Events and Event Registrations</span>
-                </a>
-            @endif
+            {{-- Plugin-contributed importers (plugin contract surface 8) —
+                 today the Events plugin's card renders here; an absent plugin
+                 contributes nothing. --}}
+            @foreach ($this->getPluginImporters() as $importer)
+                @if (in_array($importer['modelType'], $blockedTypes))
+                    <div class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-60 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
+                        <x-dynamic-component :component="$importer['icon']" class="h-10 w-10 text-gray-400" />
+                        <span class="text-base font-semibold text-gray-400">{{ $importer['label'] }}</span>
+                        <span class="text-xs text-gray-400">A previous {{ $importer['slug'] }} import is awaiting review. Approve or roll it back before starting a new one.
+                            @if (auth()->user()?->can('review_imports'))
+                                <a href="#review-queue" class="underline text-primary-500">Go to review queue</a>
+                            @endif
+                        </span>
+                    </div>
+                @else
+                    <a href="{{ $importer['url'] }}"
+                       class="flex flex-col items-center gap-3 rounded-xl border-2 border-primary-300 bg-white p-6 text-center shadow-sm transition hover:border-primary-500 hover:shadow-md dark:bg-gray-900 dark:border-primary-700 dark:hover:border-primary-400">
+                        <x-dynamic-component :component="$importer['icon']" class="h-10 w-10 text-primary-500" />
+                        <span class="text-base font-semibold">{{ $importer['label'] }}</span>
+                    </a>
+                @endif
+            @endforeach
 
             {{-- Import Donations --}}
             @if (in_array('donation', $blockedTypes))
@@ -137,9 +141,11 @@
                 <button wire:click="downloadContactsTemplate" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800">
                     <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> Contacts
                 </button>
-                <button wire:click="downloadEventsTemplate" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800">
-                    <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> Events
-                </button>
+                @foreach ($this->getPluginImporters() as $importer)
+                    <button wire:click="downloadPluginTemplate('{{ $importer['slug'] }}')" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800">
+                        <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> {{ ucfirst($importer['slug']) }}
+                    </button>
+                @endforeach
                 <button wire:click="downloadDonationsTemplate" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800">
                     <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> Donations
                 </button>

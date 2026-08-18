@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\ThisWeeksEvents;
+namespace Plugins\Events\Widgets\ThisWeeksEvents;
 
 use App\Support\DateFormat;
 use App\Widgets\Contracts\WidgetDefinition;
@@ -13,6 +13,11 @@ class ThisWeeksEventsDefinition extends WidgetDefinition
     public function handle(): string
     {
         return 'this_weeks_events';
+    }
+
+    public function template(): string
+    {
+        return "@include('plugin-events-widgets::ThisWeeksEvents.template')";
     }
 
     public function label(): string

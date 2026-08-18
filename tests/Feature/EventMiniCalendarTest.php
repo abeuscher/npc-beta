@@ -4,7 +4,7 @@ use App\Models\Event;
 use App\Models\Page;
 use App\Models\WidgetType;
 use App\Services\WidgetRenderer;
-use App\Widgets\EventMiniCalendar\EventMiniCalendarDefinition;
+use Plugins\Events\Widgets\EventMiniCalendar\EventMiniCalendarDefinition;
 use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;

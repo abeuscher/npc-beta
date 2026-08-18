@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Importers;
+namespace Plugins\Events\Importers;
 
 use App\Importers\Concerns\FieldRegistry;
 

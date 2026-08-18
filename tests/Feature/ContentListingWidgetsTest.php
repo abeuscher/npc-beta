@@ -4,7 +4,7 @@ use App\Models\Event;
 use App\Models\Page;
 use App\Models\WidgetType;
 use App\Widgets\BlogListing\BlogListingDefinition;
-use App\Widgets\EventsListing\EventsListingDefinition;
+use Plugins\Events\Widgets\EventsListing\EventsListingDefinition;
 use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
@@ -218,7 +218,7 @@ it('events listing widget renders with default content template', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
+        file_get_contents(base_path('plugins/Events/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => 'Upcoming Events',
@@ -251,7 +251,7 @@ it('events listing widget applies token replacement correctly', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
+        file_get_contents(base_path('plugins/Events/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -276,7 +276,7 @@ it('events listing widget applies token replacement correctly', function () {
 
 it('events listing renders empty state when no upcoming events', function () {
     $html = Blade::render(
-        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
+        file_get_contents(base_path('plugins/Events/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -296,7 +296,7 @@ it('events listing renders empty state when no upcoming events', function () {
 
 it('events listing renders search input when show_search is enabled', function () {
     $html = Blade::render(
-        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
+        file_get_contents(base_path('plugins/Events/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -420,7 +420,7 @@ it('events listing renders default spaceBetween when gap is not set', function (
     ]);
 
     $html = Blade::render(
-        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
+        file_get_contents(base_path('plugins/Events/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -447,7 +447,7 @@ it('events listing renders custom spaceBetween from gap config', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
+        file_get_contents(base_path('plugins/Events/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
