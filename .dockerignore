@@ -1,10 +1,11 @@
 # Dependencies — rebuilt inside container
 vendor/
 
-# Local environment — never bake secrets into an image
-.env
-.env.local
-.env.*.local
+# Local environment — never bake secrets into an image. Everything except the
+# committed example: Laravel prefers .env.{APP_ENV} when it exists, so a stray
+# local .env.production baked into an image overrides the container's env_file.
+.env*
+!.env.example
 
 # Version control
 .git/
