@@ -1,0 +1,31 @@
+{
+    "name": "nonprofitcrm/nonprofitcrm",
+    "description": "The distribution manifest — the authority for which plugins this build composes and in what order (docs/plugin-contract.md surface 1). Entry order is the provider load order. config/plugins.php is generated from this file by `php artisan plugins:manifest-sync`; composer.json and the Dockerfile stay hand-maintained, pinned to this file by DistributionManifestGuardTest.",
+    "plugins": [
+        {
+            "provider": "Plugins\\LogoGarden\\LogoGardenServiceProvider",
+            "package": "nonprofitcrm/logo-garden",
+            "constraint": "^0.1",
+            "source": {
+                "type": "vcs",
+                "url": "https://github.com/abeuscher/crm-plugin--logo-garden.git"
+            }
+        },
+        {
+            "provider": "Plugins\\Payments\\PaymentsServiceProvider",
+            "source": {
+                "type": "folder",
+                "path": "plugins/Payments"
+            }
+        },
+        {
+            "provider": "Plugins\\Events\\EventsServiceProvider",
+            "package": "nonprofitcrm/events",
+            "constraint": "^0.1",
+            "source": {
+                "type": "path",
+                "path": "plugins/Events"
+            }
+        }
+    ]
+}

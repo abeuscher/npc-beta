@@ -1,5 +1,6 @@
 <?php
 
+use App\Plugins\DistributionManifest;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -21,19 +22,22 @@ uses(TestCase::class);
  *      version field in its manifest).
  *   4. The root "Plugins\" PSR-4 mapping stays until it retires per-plugin
  *      as each becomes a package (contract: accepted overlap, decision 3).
+ *
+ * The extracted set derives from distribution.json's vcs-sourced entries
+ * (session 386, arc P10) — the former hand-maintained EXTRACTED_PLUGIN_PACKAGES
+ * const, folded into the manifest so an extraction is declared once.
  */
-// Plugin packages extracted to their own repositories (session 385, arc P9 —
-// Stage C-lite) resolve through a VCS repository + git tag instead of a path
-// repository. One entry per extracted package; extending this list is a step
-// in docs/plugin-extraction-runbook.md.
-const EXTRACTED_PLUGIN_PACKAGES = ['nonprofitcrm/logo-garden'];
+function extractedPluginPackageNames(): array
+{
+    return DistributionManifest::load()->packageNamesOfKind('vcs');
+}
 
 it('packaged plugins declare no Laravel auto-discovery providers', function () {
     $manifests = glob(base_path('plugins/*/composer.json'));
 
     expect($manifests)->not->toBeEmpty();
 
-    foreach (EXTRACTED_PLUGIN_PACKAGES as $name) {
+    foreach (extractedPluginPackageNames() as $name) {
         $manifests[] = base_path("vendor/{$name}/composer.json");
     }
 
@@ -63,7 +67,9 @@ it('every extracted plugin package is lock-pinned to a tagged VCS release', func
     $lock = json_decode(file_get_contents(base_path('composer.lock')), true);
     $locked = collect($lock['packages'])->keyBy('name');
 
-    foreach (EXTRACTED_PLUGIN_PACKAGES as $name) {
+    expect(extractedPluginPackageNames())->not->toBeEmpty();
+
+    foreach (extractedPluginPackageNames() as $name) {
         $pkg = $locked->get($name);
 
         expect($pkg)->not->toBeNull("{$name} is not in composer.lock");
