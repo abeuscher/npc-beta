@@ -1,0 +1,16 @@
+{
+    "name": "nonprofitcrm/payments",
+    "description": "Payments foundation plugin — Stripe rails: checkout-session creation, webhook handling, payment-mode detection, product price sync, and the payments capability.",
+    "type": "library",
+    "license": "MIT",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2",
+        "stripe/stripe-php": "^16.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Payments\\": ""
+        }
+    }
+}

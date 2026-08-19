@@ -13,8 +13,10 @@
         },
         {
             "provider": "Plugins\\Payments\\PaymentsServiceProvider",
+            "package": "nonprofitcrm/payments",
+            "constraint": "^0.1",
             "source": {
-                "type": "folder",
+                "type": "path",
                 "path": "plugins/Payments"
             }
         },

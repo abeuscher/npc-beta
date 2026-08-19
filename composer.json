@@ -9,6 +9,10 @@
             "url": "plugins/Events"
         },
         {
+            "type": "path",
+            "url": "plugins/Payments"
+        },
+        {
             "type": "vcs",
             "url": "https://github.com/abeuscher/crm-plugin--logo-garden.git"
         }
@@ -26,6 +30,7 @@
         "mailchimp/marketing": "^3.0",
         "nonprofitcrm/events": "^0.1",
         "nonprofitcrm/logo-garden": "^0.1",
+        "nonprofitcrm/payments": "^0.1",
         "predis/predis": "^2.2",
         "quickbooks/v3-php-sdk": "^6.2",
         "resend/resend-php": "^1.1",
@@ -36,7 +41,6 @@
         "spatie/laravel-permission": "^6.7",
         "spatie/laravel-schemaless-attributes": "^2.5",
         "spatie/laravel-sluggable": "^3.6",
-        "stripe/stripe-php": "^16.6",
         "symfony/yaml": "^8.0"
     },
     "require-dev": {

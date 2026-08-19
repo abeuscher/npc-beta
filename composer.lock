@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1415362bb06dc286d1f85c59e7af8105",
+    "content-hash": "b56fb702cbc1b7d95283fc49bf8da6d0",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4470,6 +4470,32 @@
                 "issues": "https://github.com/abeuscher/crm-plugin--logo-garden/issues"
             },
             "time": "2026-08-19T09:26:34+00:00"
+        },
+        {
+            "name": "nonprofitcrm/payments",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/Payments",
+                "reference": "ec5dbead23de4d4dcbc13ad4b016ed6c8f0b9f43"
+            },
+            "require": {
+                "php": "^8.2",
+                "stripe/stripe-php": "^16.6"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Plugins\\Payments\\": ""
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Payments foundation plugin — Stripe rails: checkout-session creation, webhook handling, payment-mode detection, product price sync, and the payments capability.",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "nunomaduro/termwind",
