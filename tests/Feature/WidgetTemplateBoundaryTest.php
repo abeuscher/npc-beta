@@ -39,7 +39,7 @@ function widgetBoundaryScanTargets(): array
     $targets = array_merge(
         glob(base_path('app/Widgets/*/template.blade.php')) ?: [],
         glob(base_path('plugins/*/template.blade.php')) ?: [],
-        // Vertical plugins nest their widget folders (plugins/Events/Widgets/*
+        // Vertical plugins nest their widget folders (the Events plugin nests Widgets/*
         // since session 381); single-widget plugins keep templates at the root.
         glob(base_path('plugins/*/Widgets/*/template.blade.php')) ?: [],
     );
@@ -74,9 +74,11 @@ function widgetBoundaryScanTargets(): array
 it('scans a non-empty template set covering core widgets, plugins, and shared partials', function () {
     $targets = widgetBoundaryScanTargets();
 
+    // The in-repo set may be empty (session 388: the Events extraction emptied
+    // plugins/ until the next vertical carves into it) — plugin templates are
+    // in scope so long as they exist in-repo or as extracted packages.
     expect(count($targets))->toBeGreaterThanOrEqual(41)
-        ->and(array_filter($targets, fn ($p) => str_contains($p, 'plugins/')))->not->toBeEmpty()
-        ->and(array_filter($targets, fn ($p) => str_contains($p, 'vendor/nonprofitcrm/')))->not->toBeEmpty()
+        ->and(array_filter($targets, fn ($p) => str_contains($p, 'plugins/') || str_contains($p, 'vendor/nonprofitcrm/')))->not->toBeEmpty()
         ->and(array_filter($targets, fn ($p) => str_contains($p, 'widget-shared')))->not->toBeEmpty();
 });
 

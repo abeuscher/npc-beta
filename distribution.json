@@ -25,8 +25,8 @@
             "package": "nonprofitcrm/events",
             "constraint": "^0.1",
             "source": {
-                "type": "path",
-                "path": "plugins/Events"
+                "type": "vcs",
+                "url": "https://github.com/abeuscher/crm-plugin--events.git"
             }
         }
     ]

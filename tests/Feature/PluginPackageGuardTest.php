@@ -33,13 +33,16 @@ function extractedPluginPackageNames(): array
 }
 
 it('packaged plugins declare no Laravel auto-discovery providers', function () {
+    // The in-repo set may be empty (session 388: the Events extraction emptied
+    // plugins/ until the next vertical carves into it) — the combined in-repo +
+    // extracted set is what must never be empty.
     $manifests = glob(base_path('plugins/*/composer.json'));
-
-    expect($manifests)->not->toBeEmpty();
 
     foreach (extractedPluginPackageNames() as $name) {
         $manifests[] = base_path("vendor/{$name}/composer.json");
     }
+
+    expect($manifests)->not->toBeEmpty();
 
     foreach ($manifests as $manifest) {
         expect(file_exists($manifest))->toBeTrue("Missing plugin manifest: {$manifest}");
@@ -54,7 +57,13 @@ it('every in-repo plugin package manifest is pinned in composer.lock as a path p
     $lock = json_decode(file_get_contents(base_path('composer.lock')), true);
     $locked = collect($lock['packages'])->keyBy('name');
 
-    foreach (glob(base_path('plugins/*/composer.json')) as $manifest) {
+    // The in-repo set may be empty (session 388: the Events extraction emptied
+    // plugins/ until the next vertical carves into it) — the shape is asserted
+    // for whatever exists.
+    $manifests = glob(base_path('plugins/*/composer.json')) ?: [];
+    expect($manifests)->toBeArray();
+
+    foreach ($manifests as $manifest) {
         $name = json_decode(file_get_contents($manifest), true)['name'] ?? null;
 
         expect($name)->not->toBeNull("Missing package name in {$manifest}");
@@ -106,9 +115,9 @@ it('keeps plugin-owned tables out of the core schema dump', function () {
     $dump = file_get_contents(base_path('database/schema/pgsql-schema.sql'));
 
     $pluginTables = [
-        'events'              => 'plugins/Events',
-        'event_registrations' => 'plugins/Events',
-        'ticket_tiers'        => 'plugins/Events',
+        'events'              => 'vendor/nonprofitcrm/events',
+        'event_registrations' => 'vendor/nonprofitcrm/events',
+        'ticket_tiers'        => 'vendor/nonprofitcrm/events',
     ];
 
     foreach ($pluginTables as $table => $owner) {

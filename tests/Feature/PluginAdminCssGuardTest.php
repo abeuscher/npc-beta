@@ -35,6 +35,13 @@ function pluginAdminCssScanTargets(): array
     $roots = array_merge([base_path('plugins')], extractedPluginPackageDirs());
 
     foreach ($roots as $root) {
+        // plugins/ may be absent entirely (session 388: the Events extraction
+        // emptied it, and git tracks no empty dirs) — the extracted-package
+        // roots still cover every plugin.
+        if (! is_dir($root)) {
+            continue;
+        }
+
         $it = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
         );

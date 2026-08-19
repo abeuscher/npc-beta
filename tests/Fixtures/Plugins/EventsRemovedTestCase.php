@@ -38,7 +38,7 @@ abstract class EventsRemovedTestCase extends TestCase
         // path directly so migrate:fresh still creates the events tables the
         // data-kept assertions query. A never-installed composition is proven
         // by the per-composition fresh-install identity check, not here.
-        $app->make('migrator')->path($app->basePath('plugins/Events/database/migrations'));
+        $app->make('migrator')->path($app->basePath('vendor/nonprofitcrm/events/database/migrations'));
 
         return $app;
     }

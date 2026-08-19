@@ -15,7 +15,7 @@ use App\WidgetPrimitive\Source;
  * callers need it with the plugin absent — Event::duplicate(), the
  * random-data generator, and the events importer all create landing pages.
  * Lifted from EventResource at session 381 (arc P5) when the resource moved
- * into plugins/Events/.
+ * into plugins/Events/ (extracted to crm-plugin--events at session 388, arc D2).
  */
 class EventLandingPageFactory
 {

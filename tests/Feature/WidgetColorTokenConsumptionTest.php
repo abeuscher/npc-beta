@@ -44,7 +44,7 @@ function widgetScssColorHits(): array
     $files = array_merge(
         glob($root . '/app/Widgets/*/*.scss'),
         glob($root . '/plugins/*/*.scss'),
-        // Vertical plugins nest their widget folders (plugins/Events/Widgets/*
+        // Vertical plugins nest their widget folders (the Events plugin nests Widgets/*
         // since session 381); single-widget plugins keep SCSS at the root.
         glob($root . '/plugins/*/Widgets/*/*.scss'),
     );
@@ -95,7 +95,7 @@ function widgetScssColorHits(): array
 // Everything else migrated to `var(--np-color-*)`. Migrating one of these
 // five means deleting it here in the same reviewed pass.
 const WIDGET_SCSS_COLOR_BASELINE = [
-    'plugins/Events/Widgets/EventsListing/styles.scss:128',  // #fff on --np-color-success fill (judgment #3); line shifted +5 by the session-333 `.content-card { min-width: 0 }` even-grid fix
+    'vendor/nonprofitcrm/events/Widgets/EventsListing/styles.scss:128',  // #fff on --np-color-success fill (judgment #3); line shifted +5 by the session-333 `.content-card { min-width: 0 }` even-grid fix; key re-pointed at the session-388 Events extraction
     'app/Widgets/MapEmbed/styles.scss:34',        // #fff on rgba scrim (judgment #4)
     'app/Widgets/ProductCarousel/styles.scss:25', // #000000 gradient stop (scope-fenced)
     'app/Widgets/ProductCarousel/styles.scss:30', // #000000 gradient stop (scope-fenced)

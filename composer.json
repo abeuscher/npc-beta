@@ -5,8 +5,8 @@
     "license": "MIT",
     "repositories": [
         {
-            "type": "path",
-            "url": "plugins/Events"
+            "type": "vcs",
+            "url": "https://github.com/abeuscher/crm-plugin--events.git"
         },
         {
             "type": "vcs",

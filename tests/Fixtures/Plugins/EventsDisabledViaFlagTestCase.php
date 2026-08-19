@@ -34,7 +34,7 @@ abstract class EventsDisabledViaFlagTestCase extends TestCase
         // loadMigrationsFrom never runs — register the plugin's migration
         // path directly so migrate:fresh still creates the events tables the
         // data-kept assertions query (the EventsRemovedTestCase mechanics).
-        $app->make('migrator')->path($app->basePath('plugins/Events/database/migrations'));
+        $app->make('migrator')->path($app->basePath('vendor/nonprofitcrm/events/database/migrations'));
 
         return $app;
     }

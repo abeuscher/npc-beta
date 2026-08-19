@@ -12,7 +12,7 @@
             <directory>tests/Feature</directory>
         </testsuite>
         <testsuite name="Events">
-            <directory>plugins/Events/tests</directory>
+            <directory>vendor/nonprofitcrm/events/tests</directory>
         </testsuite>
     </testsuites>
     <source>

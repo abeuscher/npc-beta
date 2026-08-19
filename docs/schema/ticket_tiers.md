@@ -1,6 +1,6 @@
 ## ticket_tiers
 
-**Owned by `plugins/Events/`** — created by the plugin's `database/migrations/`, not core's schema dump (session 383).
+**Owned by the Events plugin (`nonprofitcrm/events`, extracted to `crm-plugin--events` session 388)** — created by the plugin's `database/migrations/`, not core's schema dump (session 383).
 
 Per-event ticket tiers — the canonical price and capacity for event registration.
 

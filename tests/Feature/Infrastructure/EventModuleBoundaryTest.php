@@ -6,7 +6,8 @@ uses(TestCase::class);
 
 /**
  * Events module boundary guard (session 381, Plugin Architecture arc P5).
- * The Events vertical lives in plugins/Events/; the boundary is
+ * The Events vertical is the nonprofitcrm/events package (extracted to
+ * crm-plugin--events at session 388, arc D2); the boundary is
  * one-directional — the plugin reaching core (models, Transaction, the
  * capability API) is the allowed hard dependency, but nothing in app/ may
  * reference the plugin namespace, with ZERO allowlist. Core reaches the
