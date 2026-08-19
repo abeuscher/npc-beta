@@ -45,7 +45,12 @@ class DistributionManifest
             throw new RuntimeException("Distribution manifest missing at {$path}.");
         }
 
-        $json = json_decode((string) file_get_contents($path), true);
+        return self::fromJson((string) file_get_contents($path));
+    }
+
+    public static function fromJson(string $raw): self
+    {
+        $json = json_decode($raw, true);
 
         if (! is_array($json)) {
             throw new RuntimeException('distribution.json is not valid JSON: '.json_last_error_msg());

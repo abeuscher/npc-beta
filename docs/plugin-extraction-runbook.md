@@ -17,6 +17,7 @@ Survey the plugin's location-keyed touchpoints before starting (each has a step 
 
 | Touchpoint | Where to look |
 |---|---|
+| Distribution-manifest entry | the plugin's `distribution.json` entry — its `source` flips `path` → `vcs` in step 5 (session 386: the manifest is the plugin-set authority; `DistributionManifestGuardTest` pins every surface below to it, so a missed step now fails the suite loudly) |
 | Asset paths | the definition's `assets()` — `plugins/{PascalName}/…` strings |
 | Dockerfile manifest COPYs | `COPY plugins/{PascalName}/composer.json …` — one line per composer stage |
 | Guard scans | every test globbing `plugins/*` (see step 8) |
@@ -58,7 +59,9 @@ The tag must be on GitHub **before** step 5 — composer resolves the require ag
 
 ## 5. Swap the core repo onto the VCS repository
 
-In root `composer.json`:
+First, in `distribution.json` (session 386 — the plugin-set authority): flip the plugin's `source` from `{"type": "path", "path": "plugins/{PascalName}"}` to `{"type": "vcs", "url": "https://github.com/{owner}/crm-plugin--{handle}.git"}`; `provider`, `package`, and `constraint` stay unchanged. The config list doesn't change on extraction (same providers, same order), so `plugins:manifest-sync` reports no-op — the edit is what moves the plugin into the guard's vcs-sourced set (lock pinning, no Dockerfile COPY lines, `PluginPackageGuardTest`'s tagged-VCS assertions all key off it).
+
+Then, in root `composer.json`:
 
 - Replace the plugin's `{"type": "path", "url": "plugins/{PascalName}"}` repository entry with `{"type": "vcs", "url": "https://github.com/{owner}/crm-plugin--{handle}.git"}`.
 - The require line **stays bound and unchanged** (`"{vendor}/{package}": "^0.1"`).
@@ -77,7 +80,7 @@ Confirm the lock entry: `source.type = git` at the exact tag commit, `dist.type 
 
 ## 6. Dockerfile cleanup
 
-Delete the plugin's manifest COPY line from **both** composer stages (`COPY plugins/{PascalName}/composer.json plugins/{PascalName}/`). A VCS-resolved package needs no source COPY at all — `composer install` fetches it from GitHub during the build (which is why visibility/auth was step 1's decision).
+Delete the plugin's manifest COPY line from **both** composer stages (`COPY plugins/{PascalName}/composer.json plugins/{PascalName}/`). A VCS-resolved package needs no source COPY at all — `composer install` fetches it from GitHub during the build (which is why visibility/auth was step 1's decision). Since session 386 a forgotten cleanup fails the suite: `DistributionManifestGuardTest` asserts the Dockerfile's plugin COPY lines are exactly one per *path*-sourced manifest entry per stage.
 
 ## 7. Re-point direct file reads
 
@@ -97,7 +100,7 @@ The zero-allowlist guarantees must not silently shrink when a plugin leaves the 
 
 A **new** guard added since 385 that scans `plugins/*` must adopt the helper too — that's the standing rule, not a per-extraction decision.
 
-`PluginPackageGuardTest` is the stage split: add the package name to its **`EXTRACTED_PLUGIN_PACKAGES`** const. That moves it from the path-pinning assertion to the VCS one (lock-pinned to a tag-shaped version at an exact git commit, dist zip, no `version` field in the vendor manifest, still no auto-discovery).
+`PluginPackageGuardTest` is the stage split, and since session 386 it needs **no edit**: its extracted set derives from `distribution.json`'s vcs-sourced entries, so the step-5 manifest edit already moved the package from the path-pinning assertion to the VCS one (lock-pinned to a tag-shaped version at an exact git commit, dist zip, no `version` field in the vendor manifest, still no auto-discovery). The former hand-maintained `EXTRACTED_PLUGIN_PACKAGES` const is gone — the manifest is declared once.
 
 ## 9. Test membership — decision point
 
@@ -126,7 +129,7 @@ Normative rule 5's target posture is that plugin-subject tests ship with the plu
 
 ## What stays the same (do NOT touch these)
 
-- **`config/plugins.php`** — the provider FQCN line is unchanged; the config list stays the installed superset + sole ordering authority.
+- **`config/plugins.php`** — the provider FQCN line is unchanged (extraction moves code, not composition; since session 386 the file is generated from `distribution.json`, and an extraction changes only the entry's `source`, which doesn't touch the generated list). The config list stays the installed superset + sole runtime ordering authority.
 - **Activation** — handles derive from the provider FQCN's namespace; `PLUGINS_DISABLED` and the remove-the-line guarantee work identically wherever the class autoloads from. An extraction that adds any location-keyed activation logic is wrong.
 - **The root `"Plugins\": "plugins/"` PSR-4 mapping** — stays while any in-repo plugin remains; it simply no longer covers the extracted package (the package's own PSR-4 is now the only mapping for it — the contract's "retires per-plugin" line).
 - **Core code** — `AssetBuildService`, `WidgetRegistry`, `PluginServiceProvider` are untouched; asset paths are opaque repo-relative strings to them.
