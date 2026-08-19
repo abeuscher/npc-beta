@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b56fb702cbc1b7d95283fc49bf8da6d0",
+    "content-hash": "baab47b2b6ba3aa96a72dbf5789e9e93",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4473,11 +4473,17 @@
         },
         {
             "name": "nonprofitcrm/payments",
-            "version": "0.1.0",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/abeuscher/crm-plugin--payments.git",
+                "reference": "b2c0479af17302172746f4b401eb6b7cc20603b9"
+            },
             "dist": {
-                "type": "path",
-                "url": "plugins/Payments",
-                "reference": "ec5dbead23de4d4dcbc13ad4b016ed6c8f0b9f43"
+                "type": "zip",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--payments/zipball/b2c0479af17302172746f4b401eb6b7cc20603b9",
+                "reference": "b2c0479af17302172746f4b401eb6b7cc20603b9",
+                "shasum": ""
             },
             "require": {
                 "php": "^8.2",
@@ -4493,9 +4499,11 @@
                 "MIT"
             ],
             "description": "Payments foundation plugin — Stripe rails: checkout-session creation, webhook handling, payment-mode detection, product price sync, and the payments capability.",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/abeuscher/crm-plugin--payments/tree/v0.1.0",
+                "issues": "https://github.com/abeuscher/crm-plugin--payments/issues"
+            },
+            "time": "2026-08-19T19:08:07+00:00"
         },
         {
             "name": "nunomaduro/termwind",

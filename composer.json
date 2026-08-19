@@ -9,8 +9,8 @@
             "url": "plugins/Events"
         },
         {
-            "type": "path",
-            "url": "plugins/Payments"
+            "type": "vcs",
+            "url": "https://github.com/abeuscher/crm-plugin--payments.git"
         },
         {
             "type": "vcs",

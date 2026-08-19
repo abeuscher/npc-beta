@@ -6,7 +6,8 @@ uses(TestCase::class);
 
 /**
  * Payments module boundary guard (session 380, Plugin Architecture arc P4).
- * The Stripe rails live in plugins/Payments/; core talks to them only through
+ * The Stripe rails live in the nonprofitcrm/payments package (its own repo
+ * since session 387, arc D1); core talks to them only through
  * the core-owned seams — CapabilityRegistry::enabled('payments'), the
  * CheckoutProvider contract, and PaymentMode. Three reaches are banned in
  * app/, each with ZERO allowlist:
@@ -63,7 +64,7 @@ it('keeps the Stripe SDK out of core', function () {
         ->and(paymentBoundaryOffenders($client))->toBe([]);
 
     // Positive controls: the plugin's own files DO match both patterns.
-    $service = (string) file_get_contents(base_path('plugins/Payments/Services/StripeCheckoutService.php'));
+    $service = (string) file_get_contents(base_path('vendor/nonprofitcrm/payments/Services/StripeCheckoutService.php'));
     expect($service)->toMatch($sdkNamespace)->toMatch($client);
 });
 
@@ -84,6 +85,6 @@ it('keeps services.stripe config reads out of core', function () {
 
     // Positive control: the plugin's webhook controller DOES read its own
     // config namespace.
-    expect((string) file_get_contents(base_path('plugins/Payments/Http/Controllers/StripeWebhookController.php')))
+    expect((string) file_get_contents(base_path('vendor/nonprofitcrm/payments/Http/Controllers/StripeWebhookController.php')))
         ->toMatch($pattern);
 });

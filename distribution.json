@@ -16,8 +16,8 @@
             "package": "nonprofitcrm/payments",
             "constraint": "^0.1",
             "source": {
-                "type": "path",
-                "path": "plugins/Payments"
+                "type": "vcs",
+                "url": "https://github.com/abeuscher/crm-plugin--payments.git"
             }
         },
         {

@@ -17,7 +17,6 @@ WORKDIR /app
 # repository resolves; the symlinked package contents arrive with the
 # source COPYs below.
 COPY composer.json composer.lock ./
-COPY plugins/Payments/composer.json plugins/Payments/
 COPY plugins/Events/composer.json plugins/Events/
 RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev --ignore-platform-reqs
 
@@ -116,7 +115,6 @@ WORKDIR /var/www/html
 # part of that set: the path repository needs them to resolve, and the
 # symlink it creates points at the full plugin source once `COPY . .` lands.
 COPY composer.json composer.lock ./
-COPY plugins/Payments/composer.json plugins/Payments/
 COPY plugins/Events/composer.json plugins/Events/
 
 # Install PHP dependencies — dev packages included for public-dev builds
