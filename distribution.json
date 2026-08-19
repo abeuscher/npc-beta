@@ -31,8 +31,10 @@
         },
         {
             "provider": "Plugins\\Donations\\DonationsServiceProvider",
+            "package": "nonprofitcrm/donations",
+            "constraint": "^0.1",
             "source": {
-                "type": "folder",
+                "type": "path",
                 "path": "plugins/Donations"
             }
         }
