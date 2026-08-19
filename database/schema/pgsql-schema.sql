@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict efkchSMPDYx91pSPdS1HawkrPLRZ7UhWJQXoDdg3wY8aKfTwvUyYbJHe94u59i9
+\restrict Puh1961KRiVGcage1IfYGyhItIjKNLPzOWeICuWtHj5CpkIDDqt3twG8hBFbfcY
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -262,85 +262,6 @@ CREATE TABLE public.dashboard_views (
 
 
 --
--- Name: donation_credits; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.donation_credits (
-    id uuid NOT NULL,
-    donation_id uuid NOT NULL,
-    attributable_type character varying(255) NOT NULL,
-    attributable_id uuid NOT NULL,
-    credit_pct numeric(5,2) NOT NULL,
-    credit_role text,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
-);
-
-
---
--- Name: donation_receipts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.donation_receipts (
-    id bigint NOT NULL,
-    contact_id uuid NOT NULL,
-    tax_year integer NOT NULL,
-    sent_at timestamp(0) without time zone NOT NULL,
-    total_amount numeric(10,2) NOT NULL,
-    breakdown json NOT NULL,
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
-
---
--- Name: donation_receipts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.donation_receipts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: donation_receipts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.donation_receipts_id_seq OWNED BY public.donation_receipts.id;
-
-
---
--- Name: donations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.donations (
-    id uuid NOT NULL,
-    contact_id uuid,
-    amount numeric(10,2) NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    type character varying(255) NOT NULL,
-    currency character varying(3) DEFAULT 'usd'::character varying NOT NULL,
-    frequency character varying(255),
-    status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
-    stripe_subscription_id character varying(255),
-    stripe_customer_id character varying(255),
-    started_at timestamp(0) without time zone,
-    ended_at timestamp(0) without time zone,
-    fund_id uuid,
-    import_source_id uuid,
-    import_session_id uuid,
-    external_id character varying(255),
-    custom_fields jsonb,
-    source character varying(255) DEFAULT 'stripe_webhook'::character varying NOT NULL,
-    organization_id uuid,
-    acknowledged_at timestamp(0) without time zone
-);
-
-
---
 -- Name: email_templates; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -485,24 +406,6 @@ CREATE SEQUENCE public.forms_id_seq
 --
 
 ALTER SEQUENCE public.forms_id_seq OWNED BY public.forms.id;
-
-
---
--- Name: funds; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.funds (
-    id uuid NOT NULL,
-    name character varying(255) NOT NULL,
-    code character varying(255) NOT NULL,
-    description text,
-    is_active boolean DEFAULT true NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    restriction_type character varying(255) DEFAULT 'unrestricted'::character varying NOT NULL,
-    quickbooks_account_id character varying(255),
-    is_archived boolean DEFAULT false NOT NULL
-);
 
 
 --
@@ -1636,13 +1539,6 @@ ALTER TABLE ONLY public.custom_field_defs ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- Name: donation_receipts id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donation_receipts ALTER COLUMN id SET DEFAULT nextval('public.donation_receipts_id_seq'::regclass);
-
-
---
 -- Name: email_templates id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1883,30 +1779,6 @@ ALTER TABLE ONLY public.dashboard_views
 
 
 --
--- Name: donation_credits donation_credits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donation_credits
-    ADD CONSTRAINT donation_credits_pkey PRIMARY KEY (id);
-
-
---
--- Name: donation_receipts donation_receipts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donation_receipts
-    ADD CONSTRAINT donation_receipts_pkey PRIMARY KEY (id);
-
-
---
--- Name: donations donations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donations
-    ADD CONSTRAINT donations_pkey PRIMARY KEY (id);
-
-
---
 -- Name: email_templates email_templates_handle_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1960,22 +1832,6 @@ ALTER TABLE ONLY public.forms
 
 ALTER TABLE ONLY public.forms
     ADD CONSTRAINT forms_pkey PRIMARY KEY (id);
-
-
---
--- Name: funds funds_code_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.funds
-    ADD CONSTRAINT funds_code_unique UNIQUE (code);
-
-
---
--- Name: funds funds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.funds
-    ADD CONSTRAINT funds_pkey PRIMARY KEY (id);
 
 
 --
@@ -2601,62 +2457,6 @@ CREATE INDEX contacts_import_session_id_index ON public.contacts USING btree (im
 
 
 --
--- Name: donation_credits_attributable_type_attributable_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX donation_credits_attributable_type_attributable_id_index ON public.donation_credits USING btree (attributable_type, attributable_id);
-
-
---
--- Name: donation_credits_donation_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX donation_credits_donation_id_index ON public.donation_credits USING btree (donation_id);
-
-
---
--- Name: donation_receipts_contact_id_tax_year_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX donation_receipts_contact_id_tax_year_index ON public.donation_receipts USING btree (contact_id, tax_year);
-
-
---
--- Name: donations_contact_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX donations_contact_id_index ON public.donations USING btree (contact_id);
-
-
---
--- Name: donations_fund_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX donations_fund_id_index ON public.donations USING btree (fund_id);
-
-
---
--- Name: donations_import_external_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX donations_import_external_idx ON public.donations USING btree (import_source_id, external_id);
-
-
---
--- Name: donations_organization_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX donations_organization_id_index ON public.donations USING btree (organization_id);
-
-
---
--- Name: donations_source_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX donations_source_index ON public.donations USING btree (source);
-
-
---
 -- Name: form_submissions_contact_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3138,62 +2938,6 @@ ALTER TABLE ONLY public.dashboard_views
 
 
 --
--- Name: donation_credits donation_credits_donation_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donation_credits
-    ADD CONSTRAINT donation_credits_donation_id_foreign FOREIGN KEY (donation_id) REFERENCES public.donations(id) ON DELETE CASCADE;
-
-
---
--- Name: donation_receipts donation_receipts_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donation_receipts
-    ADD CONSTRAINT donation_receipts_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE RESTRICT;
-
-
---
--- Name: donations donations_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donations
-    ADD CONSTRAINT donations_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
-
-
---
--- Name: donations donations_fund_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donations
-    ADD CONSTRAINT donations_fund_id_foreign FOREIGN KEY (fund_id) REFERENCES public.funds(id) ON DELETE SET NULL;
-
-
---
--- Name: donations donations_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donations
-    ADD CONSTRAINT donations_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
-
-
---
--- Name: donations donations_import_source_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donations
-    ADD CONSTRAINT donations_import_source_id_foreign FOREIGN KEY (import_source_id) REFERENCES public.import_sources(id) ON DELETE SET NULL;
-
-
---
--- Name: donations donations_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.donations
-    ADD CONSTRAINT donations_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
-
-
---
 -- Name: form_submissions form_submissions_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3597,13 +3341,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict efkchSMPDYx91pSPdS1HawkrPLRZ7UhWJQXoDdg3wY8aKfTwvUyYbJHe94u59i9
+\unrestrict Puh1961KRiVGcage1IfYGyhItIjKNLPzOWeICuWtHj5CpkIDDqt3twG8hBFbfcY
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict SKzMRcXijQX6dQotlHLscoG5wyDFYTgj8eypOFhMIJVpNOpbPQUSh6zYvtbFQMn
+\restrict e59MsQwxJzObUYExhL74SpxkPtVkmMBwr0F0GvDpKHZ1sit8t3U3qcsno1TAbyW
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3753,5 +3497,5 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 114, true);
 -- PostgreSQL database dump complete
 --
 
-\unrestrict SKzMRcXijQX6dQotlHLscoG5wyDFYTgj8eypOFhMIJVpNOpbPQUSh6zYvtbFQMn
+\unrestrict e59MsQwxJzObUYExhL74SpxkPtVkmMBwr0F0GvDpKHZ1sit8t3U3qcsno1TAbyW
 

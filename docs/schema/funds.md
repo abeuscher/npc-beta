@@ -1,5 +1,7 @@
 ## funds
 
+**Owned by the Donations plugin (`nonprofitcrm/donations`, in-repo at `plugins/Donations` — packaged session 390)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
 Named funds that donations can be allocated to.
 
 | Column | Type | Nullable | Notes |

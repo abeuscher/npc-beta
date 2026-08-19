@@ -1,5 +1,7 @@
 ## donations
 
+**Owned by the Donations plugin (`nonprofitcrm/donations`, in-repo at `plugins/Donations` — packaged session 390)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
 Stripe-backed donation records. One row per donation commitment (one-off or recurring). Completed payments are recorded as `transactions` with `subject_type = 'App\Models\Donation'`. Created by `DonationCheckoutController` on checkout initiation; updated by `StripeWebhookController` on payment completion.
 
 | Column | Type | Nullable | Notes |

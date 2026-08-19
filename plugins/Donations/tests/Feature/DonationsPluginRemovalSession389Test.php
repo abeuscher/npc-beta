@@ -21,8 +21,9 @@ uses(DonationsRemovedTestCase::class, RefreshDatabase::class);
 // the Donations vertical. The application boots with the Donations line
 // stripped from config('plugins'); the whole donations surface must vanish —
 // checkout route, admin pages, importer, widgets, email-template handles,
-// webhook fulfillment — while the DATA is kept (schema stays core this
-// session) and every other surface runs untouched.
+// webhook fulfillment — while the DATA is kept (since session 390 the four
+// donation tables are plugin-owned and reach the test database through the
+// fixture's migrator path) and every other surface runs untouched.
 
 it('does not load the Donations provider', function () {
     expect(config('plugins'))->not->toContain(\Plugins\Donations\DonationsServiceProvider::class)

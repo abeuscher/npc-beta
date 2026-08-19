@@ -1,5 +1,7 @@
 ## donation_credits
 
+**Owned by the Donations plugin (`nonprofitcrm/donations`, in-repo at `plugins/Donations` — packaged session 390)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
 Polymorphic junction table attributing soft-credit on a Donation to one or more recipients (Contact or Organization). The donation's authoritative payer remains `donations.contact_id` / `donations.organization_id`; soft-credit rows are an additive attribution layer for matching-gift, "in honour of", "triggered by", and similar use cases.
 
 | Column | Type | Nullable | Notes |

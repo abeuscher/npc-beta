@@ -14,11 +14,6 @@ use Tests\TestCase;
  * so this mirror strips the line after configuration loads and before
  * providers register — the EventsRemovedTestCase pattern. Tests on the plain
  * Tests\TestCase are the enabled twin.
- *
- * Unlike the Events fixture, no migrator path is registered: the four
- * donation tables stay in core's schema dump this session (the squash
- * redraw is the block's package session), so migrate:fresh creates them on
- * every composition regardless of the plugin.
  */
 abstract class DonationsRemovedTestCase extends TestCase
 {
@@ -35,6 +30,17 @@ abstract class DonationsRemovedTestCase extends TestCase
         });
 
         $app->make(Kernel::class)->bootstrap();
+
+        // Disabled ≠ uninstalled (contract surface 5): this fixture models
+        // installed-then-disabled — activation stripped, schema present, data
+        // kept. The provider never boots, so its loadMigrationsFrom never runs
+        // — register the plugin's migration path directly so migrate:fresh
+        // still creates the four donation tables the data-kept assertions
+        // query (the EventsRemovedTestCase mechanics; session 390, arc D3 —
+        // the squash-boundary redraw moved the donation schema to the plugin).
+        // A never-installed composition is proven by the per-composition
+        // fresh-install identity check, not here.
+        $app->make('migrator')->path($app->basePath('plugins/Donations/database/migrations'));
 
         return $app;
     }

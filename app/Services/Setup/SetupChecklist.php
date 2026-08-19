@@ -28,7 +28,7 @@ class SetupChecklist
 
     public function items(): array
     {
-        return [
+        return array_values(array_filter([
             $this->checkAdminUser(),
             $this->checkOrgName(),
             $this->checkSiteUrl(),
@@ -44,7 +44,7 @@ class SetupChecklist
             $this->checkThemeColors(),
             $this->checkCustomFields(),
             $this->checkImportData(),
-        ];
+        ]));
     }
 
     public function isFirstRun(): bool
@@ -156,16 +156,21 @@ class SetupChecklist
         ];
     }
 
-    private function checkDefaultFund(): array
+    private function checkDefaultFund(): ?array
     {
+        // The funds admin surface lives in the Donations plugin, which core
+        // cannot name — resolve by route name. With the plugin absent the row
+        // is skipped entirely: the funds table is plugin-owned (contract
+        // surface 5's composition-safety rule, session 390), and a "you need
+        // a fund" row is noise on an install with no donation form or
+        // importer.
+        if (! \Illuminate\Support\Facades\Route::has('filament.admin.resources.funds.index')) {
+            return null;
+        }
+
         $exists = Fund::query()->exists();
 
-        // The funds admin surface lives in the Donations plugin, which core
-        // cannot name — resolve by route name; absent plugin = no link (the
-        // checklist row renders without a configure action).
-        $fundsUrl = \Illuminate\Support\Facades\Route::has('filament.admin.resources.funds.index')
-            ? route('filament.admin.resources.funds.index')
-            : null;
+        $fundsUrl = route('filament.admin.resources.funds.index');
 
         return [
             'key'           => 'default_fund',
