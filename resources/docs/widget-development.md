@@ -351,7 +351,7 @@ Widgets that need seeded fixtures for a functional preview ship their own `DemoS
 | `App\Widgets\BarChart\DemoSeeder` | `chart-demo` collection with 10 monthly data points (label, value fields) | Bar Chart widget |
 | `Plugins\LogoGarden\DemoSeeder` | `logo-garden-demo` collection with 9 logo items (name, logo image) | Logo Garden widget |
 | `App\Widgets\BoardMembers\DemoSeeder` | `board-members-demo` collection with 6 members (name, photo, title, department, bio, social links) | Board Members widget |
-| `App\Widgets\DonationForm\DemoSeeder` | `demo-fund` Fund + `Spring Annual Appeal` Campaign | Donation Form widget |
+| `Plugins\Donations\Widgets\DonationForm\DemoSeeder` (the Donations plugin) | `demo-fund` Fund + `Spring Annual Appeal` Campaign | Donation Form widget |
 
 Every seeder must be idempotent — running it on an already-seeded DB must not duplicate rows or error out.
 

@@ -1,9 +1,9 @@
 <?php
 
 use App\Filament\Pages\ImportContactsPage;
-use App\Filament\Pages\ImportDonationsPage;
+use Plugins\Donations\Filament\Pages\ImportDonationsPage;
 use App\Importers\ContactFieldRegistry;
-use App\Importers\DonationImportFieldRegistry;
+use Plugins\Donations\Importers\DonationImportFieldRegistry;
 use Filament\Forms;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

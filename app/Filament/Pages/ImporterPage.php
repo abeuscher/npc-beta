@@ -49,11 +49,6 @@ class ImporterPage extends Page implements HasTable
         return CsvTemplateService::stream('contacts');
     }
 
-    public function downloadDonationsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
-    {
-        return CsvTemplateService::stream('donations');
-    }
-
     public function downloadMembershipsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         return CsvTemplateService::stream('memberships');

@@ -3,11 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Importers\ContactFieldRegistry;
-use App\Importers\DonationFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
 use App\Importers\NoteFieldRegistry;
-use App\Importers\TransactionFieldRegistry;
 use App\Models\ImportSource;
 use App\Plugins\ImporterRegistry;
 use Illuminate\Console\Command;
@@ -49,11 +47,17 @@ class SeedFakeImportSourcesCommand extends Command
             ], $force);
         }
 
-        $this->upsert(self::DONATIONS_LABEL, [
-            'donations_field_map'         => $this->donationsFieldMap(),
-            'donations_custom_field_map'  => [],
-            'donations_contact_match_key' => 'contact:email',
-        ], $force);
+        // The donations field map is the Donations plugin's importer
+        // contribution (contract surface 8); no contribution registered = no
+        // donations source.
+        $donationsImporter = app(ImporterRegistry::class)->find('donations');
+        if ($donationsImporter !== null) {
+            $this->upsert(self::DONATIONS_LABEL, [
+                'donations_field_map'         => ($donationsImporter->fakeSourceFieldMap)(),
+                'donations_custom_field_map'  => [],
+                'donations_contact_match_key' => 'contact:email',
+            ], $force);
+        }
 
         $this->upsert(self::MEMBERSHIPS_LABEL, [
             'memberships_field_map'         => $this->membershipsFieldMap(),
@@ -101,24 +105,6 @@ class SeedFakeImportSourcesCommand extends Command
         foreach (ContactFieldRegistry::fields() as $key => $def) {
             $map[strtolower($def['label'])] = $key;
         }
-        return $map;
-    }
-
-    private function donationsFieldMap(): array
-    {
-        $map = [];
-        foreach (DonationFieldRegistry::fields() as $key => $def) {
-            $map[strtolower($def['label'])] = "donation:{$key}";
-        }
-        foreach (TransactionFieldRegistry::fields() as $key => $def) {
-            if ($key === 'invoice_number') {
-                continue;
-            }
-            $map[strtolower($def['label'])] = "transaction:{$key}";
-        }
-        $map['email']   = 'contact:email';
-        $map['user id'] = 'contact:external_id';
-        $map['phone']   = 'contact:phone';
         return $map;
     }
 

@@ -146,18 +146,6 @@ class DatabaseSeeder extends Seeder
                 'body'    => '<p>Hi {{first_name}},</p><p>A form on our website was submitted using your email address. If this was you, please <a href="{{login_url}}">log in to your account</a> and complete the action while signed in.</p><p>If this was not you, no action is needed — the submission was not processed.</p>',
             ],
             [
-                'handle'        => 'donation_receipt',
-                'subject'       => 'Your {{tax_year}} donation receipt — {{org_name}}',
-                'body'          => '<p>Dear {{contact_name}},</p><p>Thank you for your generous support of {{org_name}} in {{tax_year}}. This letter serves as your official donation receipt for the {{tax_year}} tax year.</p>{{donations}}<p><strong>Total donations: ${{total}}</strong></p><p>No goods or services were provided in exchange for these contributions. Please retain this letter for your tax records.</p><p>With gratitude,<br>{{org_name}}</p>',
-                'footer_reason' => 'You received this email because you made a donation to {{org_name}} in {{tax_year}}.',
-            ],
-            [
-                'handle'        => 'donation_acknowledgment',
-                'subject'       => 'Thank you for your donation — {{org_name}}',
-                'body'          => '<p>Dear {{contact_name}},</p><p>Thank you for your generous gift of <strong>${{amount}}</strong> to {{org_name}}, received on {{date}}. This letter is your official receipt for this contribution.</p><p><strong>Gift details</strong><br>Amount: ${{amount}}<br>Date: {{date}}<br>Fund: {{fund}}<br>Reference: {{reference}}</p><p>No goods or services were provided in exchange for this contribution. Please retain this letter for your tax records.</p><p>With gratitude,<br>{{org_name}}</p>',
-                'footer_reason' => 'You received this email because you made a donation to {{org_name}}.',
-            ],
-            [
                 'handle'  => 'form_submission',
                 'subject' => 'New submission: {{form_title}}',
                 'body'    => '<p>A new submission was received from the <strong>{{form_title}}</strong> form.</p>{{submission}}',
@@ -168,6 +156,17 @@ class DatabaseSeeder extends Seeder
             EmailTemplate::firstOrCreate(
                 ['handle' => $template['handle']],
                 $template
+            );
+        }
+
+        // Plugin-owned handles (docs/plugin-contract.md surface 7) seed from
+        // the registry the enabled plugins contributed into — first consumer:
+        // the Donations plugin's donation_receipt / donation_acknowledgment.
+        // A composition without the plugin seeds no row for its handles.
+        foreach (app(\App\Plugins\EmailTemplateRegistry::class)->all() as $handle => $defaults) {
+            EmailTemplate::firstOrCreate(
+                ['handle' => $handle],
+                array_merge(['handle' => $handle], $defaults)
             );
         }
 

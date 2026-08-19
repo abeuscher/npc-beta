@@ -20,7 +20,6 @@ use App\Widgets\BlogPager\BlogPagerDefinition;
 use App\Widgets\ButtonRow\ButtonRowDefinition;
 use App\Widgets\BoardMembers\BoardMembersDefinition;
 use App\Widgets\Carousel\CarouselDefinition;
-use App\Widgets\DonationForm\DonationFormDefinition;
 use App\Widgets\Hero\HeroDefinition;
 use App\Widgets\Image\ImageDefinition;
 use App\Widgets\Logo\LogoDefinition;
@@ -38,7 +37,6 @@ use App\Widgets\PricingChart\PricingChartDefinition;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Widgets\QuickActions\QuickActionsDefinition;
 use App\Widgets\RandomDataGenerator\RandomDataGeneratorDefinition;
-use App\Widgets\RecentDonations\RecentDonationsDefinition;
 use App\Widgets\SetupChecklist\SetupChecklistDefinition;
 use App\Widgets\RecentNotes\RecentNotesDefinition;
 use App\Widgets\ProductDisplay\ProductDisplayDefinition;
@@ -89,7 +87,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new PortalAccountDashboardDefinition());
         $registry->register(new ProductDisplayDefinition());
         $registry->register(new ProductCarouselDefinition());
-        $registry->register(new DonationFormDefinition());
         $registry->register(new ImageDefinition());
         $registry->register(new LogoDefinition());
         $registry->register(new VideoEmbedDefinition());
@@ -106,7 +103,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new QuickActionsDefinition());
         $registry->register(new RecentNotesDefinition());
         $registry->register(new MembershipStatusDefinition());
-        $registry->register(new RecentDonationsDefinition());
         $registry->register(new RandomDataGeneratorDefinition());
         $registry->register(new SetupChecklistDefinition());
     }

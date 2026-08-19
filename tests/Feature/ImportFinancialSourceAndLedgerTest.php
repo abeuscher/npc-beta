@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Pages\ImportDonationsProgressPage;
+use Plugins\Donations\Filament\Pages\ImportDonationsProgressPage;
 use Plugins\Events\Filament\Pages\ImportEventsProgressPage;
 use App\Filament\Pages\ImportInvoiceDetailsProgressPage;
 use App\Filament\Pages\ImportMembershipsProgressPage;

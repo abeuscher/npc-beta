@@ -6,7 +6,6 @@ use App\Http\Controllers\MembershipCheckoutController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\DocsController;
-use App\Http\Controllers\DonationCheckoutController;
 use App\Http\Controllers\ProductCheckoutController;
 use App\Http\Controllers\ProductWaitlistController;
 use App\Http\Controllers\MailChimpWebhookController;
@@ -48,11 +47,8 @@ $blogPrefix = config('site.blog_prefix', 'news');
 Route::get("/{$blogPrefix}", [PostController::class, 'index'])->name('posts.index');
 Route::get("/{$blogPrefix}/{slug}", [PostController::class, 'show'])->name('posts.show');
 
-// Donation checkout
-$donationsPrefix = config('site.donations_prefix', 'donate');
-Route::post("/{$donationsPrefix}/checkout", [DonationCheckoutController::class, 'store'])
-    ->name('donations.checkout')
-    ->middleware('throttle:20,1');
+// The donation checkout route (donations.checkout) is registered by the
+// Donations plugin (plugins/Donations/routes/web.php).
 
 // Product checkout and waitlist
 Route::post('/products/checkout', [ProductCheckoutController::class, 'store'])

@@ -2,10 +2,10 @@
 
 use App\Filament\Resources\CollectionResource;
 use App\Filament\Resources\ContactResource;
-use App\Filament\Resources\DonationResource;
+use Plugins\Donations\Filament\Resources\DonationResource;
 use App\Filament\Resources\EmailTemplateResource;
 use Plugins\Events\Filament\Resources\EventResource;
-use App\Filament\Resources\FundResource;
+use Plugins\Donations\Filament\Resources\FundResource;
 use App\Filament\Resources\MembershipTierResource;
 use App\Filament\Resources\PageResource;
 use App\Filament\Resources\ProductResource;

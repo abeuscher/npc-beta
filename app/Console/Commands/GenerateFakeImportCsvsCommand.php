@@ -49,12 +49,14 @@ class GenerateFakeImportCsvsCommand extends Command
         $contacts = $composer->composeContacts($contactCount);
         $emails   = $composer->extractContactEmails($contacts);
 
-        // The events importer ships with the Events plugin (contract surface
-        // 8); no contribution registered means no events template to target.
-        $eventsImporter = app(\App\Plugins\ImporterRegistry::class)->find('events');
+        // The events and donations importers ship with their plugins
+        // (contract surface 8); no contribution registered means no template
+        // to target.
+        $eventsImporter    = app(\App\Plugins\ImporterRegistry::class)->find('events');
+        $donationsImporter = app(\App\Plugins\ImporterRegistry::class)->find('donations');
 
         $events    = $eventsImporter ? $composer->composeEvents($eventRows, $emails) : [];
-        $donations = $composer->composeDonations($donationCount, $emails);
+        $donations = $donationsImporter ? $composer->composeDonations($donationCount, $emails) : [];
         $memberships = $composer->composeMemberships($membershipCount, $emails);
         $invoices  = $composer->composeInvoiceDetails($invoiceRows, $emails);
         $notes     = $composer->composeNotes($noteCount, $emails);
@@ -63,7 +65,9 @@ class GenerateFakeImportCsvsCommand extends Command
         if ($eventsImporter) {
             $this->writeCsv($out . '/events.csv', CsvTemplateService::headersFor('events'), $events, 'events');
         }
-        $this->writeCsv($out . '/donations.csv', CsvTemplateService::donationHeaders(), $donations, 'donations');
+        if ($donationsImporter) {
+            $this->writeCsv($out . '/donations.csv', CsvTemplateService::headersFor('donations'), $donations, 'donations');
+        }
         $this->writeCsv($out . '/memberships.csv', CsvTemplateService::membershipHeaders(), $memberships, 'memberships');
         $this->writeCsv($out . '/invoice_details.csv', CsvTemplateService::invoiceDetailHeaders(), $invoices, 'invoice_details');
         $this->writeCsv($out . '/notes.csv', CsvTemplateService::noteHeaders(), $notes, 'notes');

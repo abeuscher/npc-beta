@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Plugins\EmailTemplateRegistry;
 use App\Services\Media\ImageSizeProfile;
 use App\Services\Media\InlineImageRenderer;
 use App\Support\HtmlSanitizer;
@@ -143,22 +144,18 @@ class EmailTemplate extends Model implements HasMedia
                 'body'          => '<p>Hi {{name}},</p><p>You have been invited to access the {{org_name}} admin panel. Click the link below to set your password and activate your account.</p><p><a href="{{invitation_url}}">Set your password</a></p><p>This link expires in 48 hours. If you were not expecting this invitation, you can safely ignore this email.</p>',
                 'footer_reason' => 'You received this email because someone invited you to access the admin panel.',
             ],
-            'donation_receipt' => [
-                'subject'       => 'Your {{tax_year}} donation receipt — {{org_name}}',
-                'body'          => '<p>Dear {{contact_name}},</p><p>Thank you for your generous support of {{org_name}} in {{tax_year}}. This letter serves as your official donation receipt for the {{tax_year}} tax year.</p>{{donations}}<p><strong>Total donations: ${{total}}</strong></p><p>No goods or services were provided in exchange for these contributions. Please retain this letter for your tax records.</p><p>With gratitude,<br>{{org_name}}</p>',
-                'footer_reason' => 'You received this email because you made a donation to {{org_name}} in {{tax_year}}.',
-            ],
-            'donation_acknowledgment' => [
-                'subject'       => 'Thank you for your donation — {{org_name}}',
-                'body'          => '<p>Dear {{contact_name}},</p><p>Thank you for your generous gift of <strong>${{amount}}</strong> to {{org_name}}, received on {{date}}. This letter is your official receipt for this contribution.</p><p><strong>Gift details</strong><br>Amount: ${{amount}}<br>Date: {{date}}<br>Fund: {{fund}}<br>Reference: {{reference}}</p><p>No goods or services were provided in exchange for this contribution. Please retain this letter for your tax records.</p><p>With gratitude,<br>{{org_name}}</p>',
-                'footer_reason' => 'You received this email because you made a donation to {{org_name}}.',
-            ],
             'form_submission' => [
                 'subject' => 'New submission: {{form_title}}',
                 'body'    => '<p>A new submission was received from the <strong>{{form_title}}</strong> form.</p>{{submission}}',
             ],
         ];
 
-        return $defaults[$handle] ?? ['subject' => '', 'body' => ''];
+        // Core-owned handles live in the array above; plugin-owned handles
+        // resolve through the EmailTemplateRegistry (docs/plugin-contract.md
+        // surface 7 — first contributor: the Donations plugin's two handles).
+        // An unknown handle still falls back to the empty template.
+        return $defaults[$handle]
+            ?? app(EmailTemplateRegistry::class)->defaultsFor($handle)
+            ?? ['subject' => '', 'body' => ''];
     }
 }

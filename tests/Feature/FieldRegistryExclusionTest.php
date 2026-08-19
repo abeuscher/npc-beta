@@ -1,7 +1,7 @@
 <?php
 
 use App\Importers\ContactFieldRegistry;
-use App\Importers\DonationFieldRegistry;
+use Plugins\Donations\Importers\DonationFieldRegistry;
 use Plugins\Events\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;

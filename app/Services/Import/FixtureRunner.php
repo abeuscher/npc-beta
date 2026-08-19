@@ -2,7 +2,6 @@
 
 namespace App\Services\Import;
 
-use App\Filament\Pages\ImportDonationsProgressPage;
 use App\Filament\Pages\ImportInvoiceDetailsProgressPage;
 use App\Filament\Pages\ImportMembershipsProgressPage;
 use App\Filament\Pages\ImportNotesProgressPage;
@@ -26,7 +25,6 @@ class FixtureRunner
      */
     private const PAGE_FOR_IMPORTER = [
         'contacts'        => ImportProgressPage::class,
-        'donations'       => ImportDonationsProgressPage::class,
         'memberships'     => ImportMembershipsProgressPage::class,
         'invoice_details' => ImportInvoiceDetailsProgressPage::class,
         'notes'           => ImportNotesProgressPage::class,

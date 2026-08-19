@@ -2,10 +2,10 @@
 
 use App\Filament\Resources\CampaignResource\Pages\ListCampaigns;
 use App\Filament\Resources\ContactResource\Pages\ListContacts;
-use App\Filament\Resources\DonationResource\Pages\ListDonations;
+use Plugins\Donations\Filament\Resources\DonationResource\Pages\ListDonations;
 use Plugins\Events\Filament\Resources\EventResource\Pages\ListEvents;
 use Plugins\Events\Filament\Resources\EventResource\Pages\ViewRegistrations;
-use App\Filament\Resources\FundResource\Pages\ListFunds;
+use Plugins\Donations\Filament\Resources\FundResource\Pages\ListFunds;
 use App\Filament\Resources\MembershipResource\Pages\ListMemberships;
 use App\Filament\Resources\NoteResource\Pages\ListNotes;
 use App\Filament\Resources\OrganizationResource\Pages\ListOrganizations;

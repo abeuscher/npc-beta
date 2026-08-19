@@ -3,8 +3,6 @@
 use App\Models\ActivityLog;
 use App\Models\Affiliation;
 use App\Models\Contact;
-use App\Models\Donation;
-use App\Models\DonationCredit;
 use App\Models\Note;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -96,36 +94,6 @@ it('AffiliationObserver writes activity_logs for created / updated / deleted', f
     $affiliation->delete();
     expect(ActivityLog::where('subject_type', Affiliation::class)
         ->where('subject_id', $affiliation->id)
-        ->where('event', 'deleted')
-        ->exists())->toBeTrue();
-});
-
-it('DonationCreditObserver writes activity_logs for created / updated / deleted', function () {
-    $donation = Donation::factory()->create();
-    $contact  = Contact::factory()->create();
-
-    $credit = DonationCredit::create([
-        'donation_id'       => $donation->id,
-        'attributable_type' => Contact::class,
-        'attributable_id'   => $contact->id,
-        'credit_pct'        => 100.00,
-        'credit_role'       => 'soft',
-    ]);
-
-    expect(ActivityLog::where('subject_type', DonationCredit::class)
-        ->where('subject_id', $credit->id)
-        ->where('event', 'created')
-        ->exists())->toBeTrue();
-
-    $credit->update(['credit_pct' => 50.00]);
-    expect(ActivityLog::where('subject_type', DonationCredit::class)
-        ->where('subject_id', $credit->id)
-        ->where('event', 'updated')
-        ->exists())->toBeTrue();
-
-    $credit->delete();
-    expect(ActivityLog::where('subject_type', DonationCredit::class)
-        ->where('subject_id', $credit->id)
         ->where('event', 'deleted')
         ->exists())->toBeTrue();
 });

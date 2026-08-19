@@ -1,7 +1,7 @@
 <?php
 
 use App\Importers\ContactFieldRegistry;
-use App\Importers\DonationFieldRegistry;
+use Plugins\Donations\Importers\DonationFieldRegistry;
 use Plugins\Events\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
@@ -51,7 +51,7 @@ it('events template includes event, registration, contact, and transaction colum
 });
 
 it('donations template includes donation and transaction columns', function () {
-    $headers = CsvTemplateService::donationHeaders();
+    $headers = CsvTemplateService::headersFor('donations');
 
     expect($headers)->toContain('Donation Amount');
     expect($headers)->toContain('Transaction Amount');

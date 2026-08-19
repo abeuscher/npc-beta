@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Plugins\CapabilityRegistry;
+use App\Plugins\EmailTemplateRegistry;
 use App\Plugins\ImporterRegistry;
 use App\Plugins\PluginAdminRegistry;
 use Illuminate\Support\ServiceProvider;
@@ -14,11 +15,12 @@ class PluginServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Bound before the plugin loop so plugin providers can declare admin
-        // contributions, capabilities, and importers into them from their own
-        // register() methods.
+        // contributions, capabilities, importers, and email-template handles
+        // into them from their own register() methods.
         $this->app->singleton(PluginAdminRegistry::class);
         $this->app->singleton(CapabilityRegistry::class);
         $this->app->singleton(ImporterRegistry::class);
+        $this->app->singleton(EmailTemplateRegistry::class);
 
         $providers = self::enabledProviders(
             config('plugins', []),

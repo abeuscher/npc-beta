@@ -14,6 +14,9 @@
         <testsuite name="Events">
             <directory>vendor/nonprofitcrm/events/tests</directory>
         </testsuite>
+        <testsuite name="Donations">
+            <directory>plugins/Donations/tests</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

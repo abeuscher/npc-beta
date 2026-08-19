@@ -104,11 +104,11 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 
 | View title (as seen in UI) | Resource / Page file |
 |---------------------------|----------------------|
-| Donations (list) | `DonationResource.php` |
+| Donations (list) | `plugins/Donations/Filament/Resources/DonationResource.php` |
 | Transactions (list) | `TransactionResource.php` |
-| Giving Summary | `Filament/Pages/DonorsPage.php` |
+| Giving Summary | `plugins/Donations/Filament/Pages/DonorsPage.php` |
 | Products (list) | `ProductResource.php` |
-| Funds & Grants (list) | `FundResource.php` |
+| Funds & Grants (list) | `plugins/Donations/Filament/Resources/FundResource.php` |
 | Campaigns (list) | `CampaignResource.php` |
 | Finance Settings | `Filament/Pages/Settings/FinanceSettingsPage.php` |
 
@@ -119,14 +119,14 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Importer | `Filament/Pages/ImporterPage.php` |
 | Import Contacts | `Filament/Pages/ImportContactsPage.php` |
 | Import Events | `vendor/nonprofitcrm/events/Filament/Pages/ImportEventsPage.php` |
-| Import Donations | `Filament/Pages/ImportDonationsPage.php` |
+| Import Donations | `plugins/Donations/Filament/Pages/ImportDonationsPage.php` |
 | Import Memberships | `Filament/Pages/ImportMembershipsPage.php` |
 | Import Invoice Details | `Filament/Pages/ImportInvoiceDetailsPage.php` |
 | Import Notes | `Filament/Pages/ImportNotesPage.php` |
 | Import History | `Filament/Pages/ImportHistoryPage.php` |
 | Import Progress (contacts) | `Filament/Pages/ImportProgressPage.php` |
 | Import Progress (events) | `vendor/nonprofitcrm/events/Filament/Pages/ImportEventsProgressPage.php` |
-| Import Progress (donations) | `Filament/Pages/ImportDonationsProgressPage.php` |
+| Import Progress (donations) | `plugins/Donations/Filament/Pages/ImportDonationsProgressPage.php` |
 | Import Progress (memberships) | `Filament/Pages/ImportMembershipsProgressPage.php` |
 | Import Progress (invoice details) | `Filament/Pages/ImportInvoiceDetailsProgressPage.php` |
 | Import Progress (notes) | `Filament/Pages/ImportNotesProgressPage.php` |
@@ -160,7 +160,7 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Member portal account dashboard | `AccountController` |
 | Event registration (POST) | `Plugins\Events\Http\Controllers\EventController::register` |
 | Product checkout (POST) | `ProductCheckoutController::store` |
-| Donation checkout (POST) | `DonationCheckoutController::store` |
+| Donation checkout (POST) | `Plugins\Donations\Http\Controllers\DonationCheckoutController::store` |
 | Web form submission (POST) | `FormSubmissionController::store` |
 | Portal event registration (POST) | `Plugins\Events\Http\Controllers\Portal\EventRegistrationController::store` |
 | Membership checkout (POST) | `MembershipCheckoutController::store` |

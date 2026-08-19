@@ -14,7 +14,7 @@
         {
             "provider": "Plugins\\Payments\\PaymentsServiceProvider",
             "package": "nonprofitcrm/payments",
-            "constraint": "^0.1",
+            "constraint": "^0.2",
             "source": {
                 "type": "vcs",
                 "url": "https://github.com/abeuscher/crm-plugin--payments.git"
@@ -27,6 +27,13 @@
             "source": {
                 "type": "vcs",
                 "url": "https://github.com/abeuscher/crm-plugin--events.git"
+            }
+        },
+        {
+            "provider": "Plugins\\Donations\\DonationsServiceProvider",
+            "source": {
+                "type": "folder",
+                "path": "plugins/Donations"
             }
         }
     ]

@@ -2,7 +2,7 @@
 
 use App\Filament\Resources\CampaignResource;
 use App\Filament\Resources\ContactResource;
-use App\Filament\Resources\FundResource;
+use Plugins\Donations\Filament\Resources\FundResource;
 use App\Filament\Resources\OrganizationResource;
 use App\Models\Campaign;
 use App\Models\Contact;

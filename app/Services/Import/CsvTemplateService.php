@@ -3,7 +3,6 @@
 namespace App\Services\Import;
 
 use App\Importers\ContactFieldRegistry;
-use App\Importers\DonationFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
 use App\Importers\NoteFieldRegistry;
@@ -31,30 +30,6 @@ class CsvTemplateService
         $headers[] = 'Organization';
         $headers[] = 'Tags';
         $headers[] = 'Notes';
-
-        return $headers;
-    }
-
-    public static function donationHeaders(): array
-    {
-        $headers = [];
-
-        foreach (DonationFieldRegistry::options() as $label) {
-            $headers[] = $label;
-        }
-
-        foreach (TransactionFieldRegistry::options() as $key => $label) {
-            // Skip duplicated fields
-            if ($key === 'invoice_number') {
-                continue;
-            }
-            $headers[] = $label;
-        }
-
-        // Contact match columns
-        $headers[] = 'Email';
-        $headers[] = 'User ID';
-        $headers[] = 'Phone';
 
         return $headers;
     }
@@ -131,7 +106,6 @@ class CsvTemplateService
     {
         return match ($type) {
             'contacts'        => static::contactHeaders(),
-            'donations'       => static::donationHeaders(),
             'memberships'     => static::membershipHeaders(),
             'invoice_details' => static::invoiceDetailHeaders(),
             'notes'           => static::noteHeaders(),

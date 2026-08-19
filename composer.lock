@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "96b82ac701f4856272dcccc35a6cd942",
+    "content-hash": "f8a607f7229cfbda5ecf873fe75c8bc9",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4415,16 +4415,16 @@
         },
         {
             "name": "nonprofitcrm/events",
-            "version": "v0.1.0",
+            "version": "v0.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/abeuscher/crm-plugin--events.git",
-                "reference": "d1533e3ce5833a406b4f00402f36811018c9a9e9"
+                "reference": "5ebb228b5e41db0ac7e94bee01c9605fdb8f7409"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/abeuscher/crm-plugin--events/zipball/d1533e3ce5833a406b4f00402f36811018c9a9e9",
-                "reference": "d1533e3ce5833a406b4f00402f36811018c9a9e9",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--events/zipball/5ebb228b5e41db0ac7e94bee01c9605fdb8f7409",
+                "reference": "5ebb228b5e41db0ac7e94bee01c9605fdb8f7409",
                 "shasum": ""
             },
             "require": {
@@ -4441,10 +4441,10 @@
             ],
             "description": "Events vertical plugin — public event pages and registration, ticket tiers, admin resource, importer, reminders, and seven event widgets.",
             "support": {
-                "source": "https://github.com/abeuscher/crm-plugin--events/tree/v0.1.0",
+                "source": "https://github.com/abeuscher/crm-plugin--events/tree/v0.1.1",
                 "issues": "https://github.com/abeuscher/crm-plugin--events/issues"
             },
-            "time": "2026-08-19T19:56:21+00:00"
+            "time": "2026-08-19T22:23:57+00:00"
         },
         {
             "name": "nonprofitcrm/logo-garden",
@@ -4481,16 +4481,16 @@
         },
         {
             "name": "nonprofitcrm/payments",
-            "version": "v0.1.0",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/abeuscher/crm-plugin--payments.git",
-                "reference": "b2c0479af17302172746f4b401eb6b7cc20603b9"
+                "reference": "4c90dcf8e1e3c9e00b011be526c18e731837b048"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/abeuscher/crm-plugin--payments/zipball/b2c0479af17302172746f4b401eb6b7cc20603b9",
-                "reference": "b2c0479af17302172746f4b401eb6b7cc20603b9",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--payments/zipball/4c90dcf8e1e3c9e00b011be526c18e731837b048",
+                "reference": "4c90dcf8e1e3c9e00b011be526c18e731837b048",
                 "shasum": ""
             },
             "require": {
@@ -4508,10 +4508,10 @@
             ],
             "description": "Payments foundation plugin — Stripe rails: checkout-session creation, webhook handling, payment-mode detection, product price sync, and the payments capability.",
             "support": {
-                "source": "https://github.com/abeuscher/crm-plugin--payments/tree/v0.1.0",
+                "source": "https://github.com/abeuscher/crm-plugin--payments/tree/v0.2.0",
                 "issues": "https://github.com/abeuscher/crm-plugin--payments/issues"
             },
-            "time": "2026-08-19T19:08:07+00:00"
+            "time": "2026-08-19T22:13:50+00:00"
         },
         {
             "name": "nunomaduro/termwind",

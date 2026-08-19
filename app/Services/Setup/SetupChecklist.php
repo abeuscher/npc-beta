@@ -8,7 +8,6 @@ use App\Filament\Pages\Settings\FinanceSettingsPage;
 use App\Filament\Pages\Settings\GeneralSettingsPage;
 use App\Filament\Pages\Settings\MailSettingsPage;
 use App\Filament\Resources\CustomFieldDefResource;
-use App\Filament\Resources\FundResource;
 use App\Filament\Resources\UserResource;
 use App\Models\Contact;
 use App\Models\CustomFieldDef;
@@ -161,13 +160,20 @@ class SetupChecklist
     {
         $exists = Fund::query()->exists();
 
+        // The funds admin surface lives in the Donations plugin, which core
+        // cannot name — resolve by route name; absent plugin = no link (the
+        // checklist row renders without a configure action).
+        $fundsUrl = \Illuminate\Support\Facades\Route::has('filament.admin.resources.funds.index')
+            ? route('filament.admin.resources.funds.index')
+            : null;
+
         return [
             'key'           => 'default_fund',
             'title'         => 'At least one fund',
             'description'   => 'Donation imports and the public donation form need a fund to attribute incoming gifts to.',
             'category'      => self::CATEGORY_REQUIRED_FOR_FEATURE,
             'status'        => $exists ? self::STATUS_DONE : self::STATUS_INCOMPLETE,
-            'configure_url' => FundResource::getUrl('index'),
+            'configure_url' => $fundsUrl,
             'message'       => null,
         ];
     }

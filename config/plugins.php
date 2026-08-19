@@ -16,4 +16,5 @@ return [
     Plugins\LogoGarden\LogoGardenServiceProvider::class,
     Plugins\Payments\PaymentsServiceProvider::class,
     Plugins\Events\EventsServiceProvider::class,
+    Plugins\Donations\DonationsServiceProvider::class,
 ];

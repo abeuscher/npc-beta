@@ -48,21 +48,6 @@
                 @endif
             @endforeach
 
-            {{-- Import Donations --}}
-            @if (in_array('donation', $blockedTypes))
-                <div class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-60 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
-                    <x-heroicon-o-gift class="h-10 w-10 text-gray-400" />
-                    <span class="text-base font-semibold text-gray-400">Import Donations</span>
-                    <span class="text-xs text-gray-400">A previous donations import is awaiting review.</span>
-                </div>
-            @else
-                <a href="{{ \App\Filament\Pages\ImportDonationsPage::getUrl() }}"
-                   class="flex flex-col items-center gap-3 rounded-xl border-2 border-primary-300 bg-white p-6 text-center shadow-sm transition hover:border-primary-500 hover:shadow-md dark:bg-gray-900 dark:border-primary-700 dark:hover:border-primary-400">
-                    <x-heroicon-o-gift class="h-10 w-10 text-primary-500" />
-                    <span class="text-base font-semibold">Import Donations</span>
-                </a>
-            @endif
-
             {{-- Import Memberships --}}
             @if (in_array('membership', $blockedTypes))
                 <div class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-60 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
@@ -146,9 +131,6 @@
                         <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> {{ ucfirst($importer['slug']) }}
                     </button>
                 @endforeach
-                <button wire:click="downloadDonationsTemplate" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800">
-                    <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> Donations
-                </button>
                 <button wire:click="downloadMembershipsTemplate" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800">
                     <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> Memberships
                 </button>
