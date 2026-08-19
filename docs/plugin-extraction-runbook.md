@@ -77,6 +77,8 @@ composer update {vendor}/{package}       # re-resolves from the tag, rewrites th
 composer validate --strict               # must stay clean
 ```
 
+**Ordering caveat (387):** once the source directory is deleted, the stale vendor symlink dangles and **artisan cannot boot** until `composer update` replaces it — run composer before any artisan command (including a `plugins:manifest-sync` check; the sync is a provider-list no-op on this walk anyway).
+
 Confirm the lock entry: `source.type = git` at the exact tag commit, `dist.type = zip` (GitHub zipball), `version = v0.1.0`. The lockfile change ships **in the same commit** as the manifest change.
 
 > *Worked example:* `vendor/nonprofitcrm/logo-garden` became a real extracted directory (path-repo packages are symlinks); the events symlink beside it is the visible difference between the two stages.
