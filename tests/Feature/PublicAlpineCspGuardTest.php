@@ -68,6 +68,11 @@ function publicSurfaceBladeFiles(): array
         base_path('resources/views/widget-shared'),
     ];
 
+    // Extracted plugin packages (session 385, arc P9) resolve into
+    // vendor/nonprofitcrm/* — the public-surface scan follows the code out
+    // of the repo (path-repo symlinks are covered via plugins/ and skipped).
+    $roots = array_merge($roots, extractedPluginPackageDirs());
+
     $files = [];
 
     foreach ($roots as $root) {
@@ -235,6 +240,10 @@ it('registers every widget Alpine component referenced by a template', function 
         glob(base_path('app/Widgets/*/script.js')),
         glob(base_path('plugins/*/script.js')),
     );
+    // Extracted plugin packages (session 385, arc P9).
+    foreach (extractedPluginPackageDirs() as $pkg) {
+        $widgetScripts = array_merge($widgetScripts, glob($pkg . '/script.js') ?: [], glob($pkg . '/Widgets/*/script.js') ?: []);
+    }
 
     foreach ($widgetScripts as $script) {
         preg_match_all('/window\.NPWidgets\.([a-zA-Z0-9_$]+)\s*=/', file_get_contents($script), $matches);
@@ -250,6 +259,9 @@ it('registers every widget Alpine component referenced by a template', function 
         glob(base_path('app/Widgets/*/template.blade.php')),
         glob(base_path('plugins/*/template.blade.php')),
     );
+    foreach (extractedPluginPackageDirs() as $pkg) {
+        $widgetTemplates = array_merge($widgetTemplates, glob($pkg . '/template.blade.php') ?: [], glob($pkg . '/Widgets/*/template.blade.php') ?: []);
+    }
 
     foreach ($widgetTemplates as $template) {
         foreach (alpineDirectives(file_get_contents($template)) as $directive) {

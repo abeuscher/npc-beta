@@ -44,6 +44,16 @@ function widgetBoundaryScanTargets(): array
         glob(base_path('plugins/*/Widgets/*/template.blade.php')) ?: [],
     );
 
+    // Extracted plugin packages (session 385, arc P9) — the boundary follows
+    // the code out of the repo into vendor/nonprofitcrm/*.
+    foreach (extractedPluginPackageDirs() as $pkg) {
+        $targets = array_merge(
+            $targets,
+            glob($pkg . '/template.blade.php') ?: [],
+            glob($pkg . '/Widgets/*/template.blade.php') ?: [],
+        );
+    }
+
     $sharedDir = base_path('resources/views/widget-shared');
     if (is_dir($sharedDir)) {
         $it = new RecursiveIteratorIterator(
@@ -66,6 +76,7 @@ it('scans a non-empty template set covering core widgets, plugins, and shared pa
 
     expect(count($targets))->toBeGreaterThanOrEqual(41)
         ->and(array_filter($targets, fn ($p) => str_contains($p, 'plugins/')))->not->toBeEmpty()
+        ->and(array_filter($targets, fn ($p) => str_contains($p, 'vendor/nonprofitcrm/')))->not->toBeEmpty()
         ->and(array_filter($targets, fn ($p) => str_contains($p, 'widget-shared')))->not->toBeEmpty();
 });
 

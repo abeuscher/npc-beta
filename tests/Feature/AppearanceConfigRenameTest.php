@@ -188,7 +188,7 @@ it('carousel widget reads caption_text_color and caption_link_color', function (
 
 it('logo_garden widget reads container_background_color into --logo-container-bg', function () {
     $html = Blade::render(
-        file_get_contents(base_path('plugins/LogoGarden/template.blade.php')),
+        file_get_contents(base_path('vendor/nonprofitcrm/logo-garden/template.blade.php')),
         [
             'config' => [
                 'image_field'                => 'logo',

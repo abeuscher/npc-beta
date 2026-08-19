@@ -12,18 +12,33 @@ uses(TestCase::class);
  * list and silently break the remove-the-line guarantee — for LogoGarden, the
  * one plugin without a removal-mirror test, nothing else would catch it.
  *
- *   1. No plugin composer.json declares extra.laravel.providers.
- *   2. Every plugin composer.json is resolved in composer.lock as a pinned
- *      path package (Stage B: the lockfile carries the package).
- *   3. The root "Plugins\" PSR-4 mapping stays until it retires per-plugin
+ *   1. No plugin composer.json declares extra.laravel.providers — in-repo
+ *      or extracted (Stage C-lite, session 385).
+ *   2. Every in-repo plugin composer.json is resolved in composer.lock as a
+ *      pinned path package (Stage B: the lockfile carries the package).
+ *   3. Every extracted plugin package is lock-pinned to a tagged VCS release
+ *      (git source at an exact commit, dist zip, tag-shaped version, no
+ *      version field in its manifest).
+ *   4. The root "Plugins\" PSR-4 mapping stays until it retires per-plugin
  *      as each becomes a package (contract: accepted overlap, decision 3).
  */
+// Plugin packages extracted to their own repositories (session 385, arc P9 —
+// Stage C-lite) resolve through a VCS repository + git tag instead of a path
+// repository. One entry per extracted package; extending this list is a step
+// in docs/plugin-extraction-runbook.md.
+const EXTRACTED_PLUGIN_PACKAGES = ['nonprofitcrm/logo-garden'];
+
 it('packaged plugins declare no Laravel auto-discovery providers', function () {
     $manifests = glob(base_path('plugins/*/composer.json'));
 
     expect($manifests)->not->toBeEmpty();
 
+    foreach (EXTRACTED_PLUGIN_PACKAGES as $name) {
+        $manifests[] = base_path("vendor/{$name}/composer.json");
+    }
+
     foreach ($manifests as $manifest) {
+        expect(file_exists($manifest))->toBeTrue("Missing plugin manifest: {$manifest}");
         $json = json_decode(file_get_contents($manifest), true);
 
         expect(data_get($json, 'extra.laravel.providers'))
@@ -31,7 +46,7 @@ it('packaged plugins declare no Laravel auto-discovery providers', function () {
     }
 })->group('widget-lint');
 
-it('every plugin package manifest is pinned in composer.lock as a path package', function () {
+it('every in-repo plugin package manifest is pinned in composer.lock as a path package', function () {
     $lock = json_decode(file_get_contents(base_path('composer.lock')), true);
     $locked = collect($lock['packages'])->keyBy('name');
 
@@ -41,6 +56,31 @@ it('every plugin package manifest is pinned in composer.lock as a path package',
         expect($name)->not->toBeNull("Missing package name in {$manifest}");
         expect($locked->has($name))->toBeTrue("{$name} is not in composer.lock");
         expect(data_get($locked->get($name), 'dist.type'))->toBe('path');
+    }
+})->group('widget-lint');
+
+it('every extracted plugin package is lock-pinned to a tagged VCS release', function () {
+    $lock = json_decode(file_get_contents(base_path('composer.lock')), true);
+    $locked = collect($lock['packages'])->keyBy('name');
+
+    foreach (EXTRACTED_PLUGIN_PACKAGES as $name) {
+        $pkg = $locked->get($name);
+
+        expect($pkg)->not->toBeNull("{$name} is not in composer.lock");
+        // The lockfile records a git source pinned to an exact commit and a
+        // dist zip of that commit — never a path back into this repo.
+        expect(data_get($pkg, 'source.type'))->toBe('git');
+        expect(data_get($pkg, 'source.reference'))->toMatch('/^[0-9a-f]{40}$/');
+        expect(data_get($pkg, 'dist.type'))->toBe('zip');
+        // Tags are the version metadata (a dev-branch pin would float).
+        expect(data_get($pkg, 'version'))->toMatch('/^v\d+\.\d+\.\d+$/');
+
+        // The extracted manifest declares NO version field: under a VCS
+        // repository the tag is canonical, and a retained field that
+        // disagrees with the tag is a composer install error (the P6
+        // path-repo determinism rationale, inverted at P9).
+        $manifest = json_decode(file_get_contents(base_path("vendor/{$name}/composer.json")), true);
+        expect($manifest)->not->toHaveKey('version', "vendor/{$name}/composer.json must not declare a version field — the git tag is the version.");
     }
 })->group('widget-lint');
 

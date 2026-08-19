@@ -9,8 +9,8 @@
             "url": "plugins/Events"
         },
         {
-            "type": "path",
-            "url": "plugins/LogoGarden"
+            "type": "vcs",
+            "url": "https://github.com/abeuscher/crm-plugin--logo-garden.git"
         }
     ],
     "require": {

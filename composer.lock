@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a001d7922eb153f79d1e7c0b5f94dd17",
+    "content-hash": "1415362bb06dc286d1f85c59e7af8105",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4440,11 +4440,17 @@
         },
         {
             "name": "nonprofitcrm/logo-garden",
-            "version": "0.1.0",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/abeuscher/crm-plugin--logo-garden.git",
+                "reference": "7e0877b9b2297558625df04ba1fb0ca08c75a04c"
+            },
             "dist": {
-                "type": "path",
-                "url": "plugins/LogoGarden",
-                "reference": "4e72a63b13cfba1964a0ecdbe16f9eec72dd94d2"
+                "type": "zip",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--logo-garden/zipball/7e0877b9b2297558625df04ba1fb0ca08c75a04c",
+                "reference": "7e0877b9b2297558625df04ba1fb0ca08c75a04c",
+                "shasum": ""
             },
             "require": {
                 "php": "^8.2"
@@ -4459,9 +4465,11 @@
                 "MIT"
             ],
             "description": "Logo Garden widget plugin — grid or carousel of partner/sponsor logos from a custom collection.",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/abeuscher/crm-plugin--logo-garden/tree/v0.1.0",
+                "issues": "https://github.com/abeuscher/crm-plugin--logo-garden/issues"
+            },
+            "time": "2026-08-19T09:26:34+00:00"
         },
         {
             "name": "nunomaduro/termwind",

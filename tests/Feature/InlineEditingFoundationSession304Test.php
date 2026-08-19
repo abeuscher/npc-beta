@@ -204,6 +204,10 @@ it('never annotates a Tier-B field as inline-editable in any widget template', f
         glob(base_path('app/Widgets/*/template.blade.php')),
         glob(base_path('plugins/*/template.blade.php')),
     );
+    // Extracted plugin packages (session 385, arc P9).
+    foreach (extractedPluginPackageDirs() as $pkg) {
+        $widgetTemplates = array_merge($widgetTemplates, glob($pkg . '/template.blade.php') ?: [], glob($pkg . '/Widgets/*/template.blade.php') ?: []);
+    }
 
     foreach ($widgetTemplates as $file) {
         $src = file_get_contents($file);

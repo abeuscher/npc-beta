@@ -55,8 +55,8 @@ it('syncs the pilot row with plugin-relative template and asset paths', function
     $row = WidgetType::where('handle', 'logo_garden')->firstOrFail();
 
     expect($row->template)->toBe("@include('plugin-logo-garden::template')");
-    expect($row->assets['scss'])->toBe(['plugins/LogoGarden/styles.scss']);
-    expect($row->assets['js'])->toBe(['plugins/LogoGarden/script.js']);
+    expect($row->assets['scss'])->toBe(['vendor/nonprofitcrm/logo-garden/styles.scss']);
+    expect($row->assets['js'])->toBe(['vendor/nonprofitcrm/logo-garden/script.js']);
     expect($row->assets['libs'])->toBe(['swiper']);
 
     foreach (array_merge($row->assets['scss'], $row->assets['js']) as $path) {

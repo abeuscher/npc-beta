@@ -63,6 +63,11 @@ function widgetScssGutterHits(): array
         glob($root . '/app/Widgets/*/*.scss'),
         glob($root . '/plugins/*/*.scss'),
     );
+    // Extracted plugin packages (session 385, arc P9); the helper skips
+    // path-repo symlinks so no file lands in the baseline diff twice.
+    foreach (extractedPluginPackageDirs() as $pkg) {
+        $files = array_merge($files, glob($pkg . '/*.scss') ?: []);
+    }
     sort($files);
 
     $hits = [];
@@ -85,6 +90,9 @@ function widgetScssViewportMediaHits(): array
         glob($root . '/app/Widgets/*/*.scss'),
         glob($root . '/plugins/*/*.scss'),
     );
+    foreach (extractedPluginPackageDirs() as $pkg) {
+        $files = array_merge($files, glob($pkg . '/*.scss') ?: []);
+    }
     sort($files);
 
     $hits = [];

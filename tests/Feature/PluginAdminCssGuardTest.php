@@ -23,18 +23,25 @@ const PLUGIN_ADMIN_CSS_BANNED_PATTERNS = [
 ];
 
 /**
- * @return array<int, string> absolute paths of all files under plugins/
+ * @return array<int, string> absolute paths of all files under plugins/ and
+ *                            under extracted plugin packages in vendor/
  */
 function pluginAdminCssScanTargets(): array
 {
     $targets = [];
 
-    $it = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator(base_path('plugins'), FilesystemIterator::SKIP_DOTS),
-    );
-    foreach ($it as $file) {
-        if ($file->isFile()) {
-            $targets[] = $file->getPathname();
+    // Extracted plugin packages (session 385, arc P9) resolve into
+    // vendor/nonprofitcrm/* — the guard follows the code out of the repo.
+    $roots = array_merge([base_path('plugins')], extractedPluginPackageDirs());
+
+    foreach ($roots as $root) {
+        $it = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+        );
+        foreach ($it as $file) {
+            if ($file->isFile()) {
+                $targets[] = $file->getPathname();
+            }
         }
     }
 
@@ -47,7 +54,8 @@ it('scans a non-empty plugin file set that includes widget SCSS', function () {
     $targets = pluginAdminCssScanTargets();
 
     expect($targets)->not->toBeEmpty()
-        ->and(array_filter($targets, fn ($p) => str_ends_with($p, '.scss')))->not->toBeEmpty();
+        ->and(array_filter($targets, fn ($p) => str_ends_with($p, '.scss')))->not->toBeEmpty()
+        ->and(array_filter($targets, fn ($p) => str_contains($p, 'vendor/nonprofitcrm/')))->not->toBeEmpty();
 });
 
 it('bans compiled CSS files under plugins/', function () {

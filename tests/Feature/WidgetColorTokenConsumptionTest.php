@@ -48,6 +48,11 @@ function widgetScssColorHits(): array
         // since session 381); single-widget plugins keep SCSS at the root.
         glob($root . '/plugins/*/Widgets/*/*.scss'),
     );
+    // Extracted plugin packages (session 385, arc P9); the helper skips
+    // path-repo symlinks so no file lands in the baseline diff twice.
+    foreach (extractedPluginPackageDirs() as $pkg) {
+        $files = array_merge($files, glob($pkg . '/*.scss') ?: [], glob($pkg . '/Widgets/*/*.scss') ?: []);
+    }
     sort($files);
 
     $hits = [];
