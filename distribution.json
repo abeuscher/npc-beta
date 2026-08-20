@@ -40,8 +40,10 @@
         },
         {
             "provider": "Plugins\\Memberships\\MembershipsServiceProvider",
+            "package": "nonprofitcrm/memberships",
+            "constraint": "^0.1",
             "source": {
-                "type": "folder",
+                "type": "path",
                 "path": "plugins/Memberships"
             }
         }

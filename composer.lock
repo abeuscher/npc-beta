@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e18cd08d6fbaf83e6c1cdbe14bf418d2",
+    "content-hash": "b7aed097c61079dce79ca4c2296bc0d9",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4511,6 +4511,31 @@
                 "issues": "https://github.com/abeuscher/crm-plugin--logo-garden/issues"
             },
             "time": "2026-08-19T09:26:34+00:00"
+        },
+        {
+            "name": "nonprofitcrm/memberships",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/Memberships",
+                "reference": "0870c6375241c5886ac80ed519fb3a2e13433ec1"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Plugins\\Memberships\\": ""
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Memberships vertical plugin — membership checkout, tiers, member admin resources, importer, and the MembershipStatus and PricingChart widgets.",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "nonprofitcrm/payments",
