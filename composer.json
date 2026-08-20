@@ -5,8 +5,8 @@
     "license": "MIT",
     "repositories": [
         {
-            "type": "path",
-            "url": "plugins/Donations"
+            "type": "vcs",
+            "url": "https://github.com/abeuscher/crm-plugin--donations.git"
         },
         {
             "type": "vcs",

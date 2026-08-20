@@ -34,8 +34,8 @@
             "package": "nonprofitcrm/donations",
             "constraint": "^0.1",
             "source": {
-                "type": "path",
-                "path": "plugins/Donations"
+                "type": "vcs",
+                "url": "https://github.com/abeuscher/crm-plugin--donations.git"
             }
         }
     ]

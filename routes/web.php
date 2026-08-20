@@ -33,7 +33,7 @@ Route::get("/webhooks/{$mailchimpPath}", fn () => response('OK', 200))
 // exemption in bootstrap/app.php stays core path-policy.
 
 // The events routes (api.events.json, events.register, portal.events.register)
-// are registered by the Events plugin (plugins/Events/routes/web.php).
+// are registered by the Events plugin (vendor/nonprofitcrm/events/routes/web.php).
 
 Route::get('/', [PageController::class, 'home']);
 
@@ -48,7 +48,7 @@ Route::get("/{$blogPrefix}", [PostController::class, 'index'])->name('posts.inde
 Route::get("/{$blogPrefix}/{slug}", [PostController::class, 'show'])->name('posts.show');
 
 // The donation checkout route (donations.checkout) is registered by the
-// Donations plugin (plugins/Donations/routes/web.php).
+// Donations plugin (vendor/nonprofitcrm/donations/routes/web.php).
 
 // Product checkout and waitlist
 Route::post('/products/checkout', [ProductCheckoutController::class, 'store'])

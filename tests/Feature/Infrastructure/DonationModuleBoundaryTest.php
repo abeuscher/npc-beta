@@ -6,7 +6,8 @@ uses(TestCase::class);
 
 /**
  * Donations module boundary guard (session 389, Plugin Architecture arc D3).
- * The Donations vertical lives in plugins/Donations/; the boundary is
+ * The Donations vertical is the nonprofitcrm/donations package (extracted to
+ * crm-plugin--donations at session 391, arc D3); the boundary is
  * one-directional — the plugin reaching core (models, Transaction, the
  * capability API, the import wizard concerns) is the allowed hard dependency,
  * but nothing in app/ may reference the plugin namespace, with ZERO

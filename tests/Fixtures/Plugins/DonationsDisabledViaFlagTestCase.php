@@ -35,7 +35,7 @@ abstract class DonationsDisabledViaFlagTestCase extends TestCase
         // path directly so migrate:fresh still creates the four donation
         // tables the data-kept assertions query (the DonationsRemovedTestCase
         // mechanics; session 390, arc D3).
-        $app->make('migrator')->path($app->basePath('plugins/Donations/database/migrations'));
+        $app->make('migrator')->path($app->basePath('vendor/nonprofitcrm/donations/database/migrations'));
 
         return $app;
     }

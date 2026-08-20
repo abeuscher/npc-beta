@@ -15,7 +15,7 @@
             <directory>vendor/nonprofitcrm/events/tests</directory>
         </testsuite>
         <testsuite name="Donations">
-            <directory>plugins/Donations/tests</directory>
+            <directory>vendor/nonprofitcrm/donations/tests</directory>
         </testsuite>
     </testsuites>
     <source>

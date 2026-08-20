@@ -1,6 +1,6 @@
 ## donation_receipts
 
-**Owned by the Donations plugin (`nonprofitcrm/donations`, in-repo at `plugins/Donations` — packaged session 390)** — created by the plugin's `database/migrations/`, not core's schema dump.
+**Owned by the Donations plugin (`nonprofitcrm/donations`, extracted to `crm-plugin--donations` session 391)** — created by the plugin's `database/migrations/`, not core's schema dump.
 
 One row per tax receipt send. Used to prevent duplicate sends and to maintain an audit trail. Re-sends create additional rows rather than overwriting.
 

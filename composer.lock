@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cc169e17ccaa7c4826f1f95e72605329",
+    "content-hash": "8a66bace873cdeb08fe77087e724bb25",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4415,11 +4415,17 @@
         },
         {
             "name": "nonprofitcrm/donations",
-            "version": "0.1.0",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/abeuscher/crm-plugin--donations.git",
+                "reference": "b34910f2be332ee340fcb863d6c713f70ebfd6df"
+            },
             "dist": {
-                "type": "path",
-                "url": "plugins/Donations",
-                "reference": "64b478db78011660dc8c89ccda1872f2eea6d22d"
+                "type": "zip",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--donations/zipball/b34910f2be332ee340fcb863d6c713f70ebfd6df",
+                "reference": "b34910f2be332ee340fcb863d6c713f70ebfd6df",
+                "shasum": ""
             },
             "require": {
                 "php": "^8.2"
@@ -4434,9 +4440,11 @@
                 "MIT"
             ],
             "description": "Donations vertical plugin — public donation checkout, funds, soft credits, receipts and acknowledgments, admin resources, importer, and the two donation widgets.",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/abeuscher/crm-plugin--donations/tree/v0.1.0",
+                "issues": "https://github.com/abeuscher/crm-plugin--donations/issues"
+            },
+            "time": "2026-08-20T00:41:55+00:00"
         },
         {
             "name": "nonprofitcrm/events",

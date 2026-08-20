@@ -104,11 +104,11 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 
 | View title (as seen in UI) | Resource / Page file |
 |---------------------------|----------------------|
-| Donations (list) | `plugins/Donations/Filament/Resources/DonationResource.php` |
+| Donations (list) | `vendor/nonprofitcrm/donations/Filament/Resources/DonationResource.php` |
 | Transactions (list) | `TransactionResource.php` |
-| Giving Summary | `plugins/Donations/Filament/Pages/DonorsPage.php` |
+| Giving Summary | `vendor/nonprofitcrm/donations/Filament/Pages/DonorsPage.php` |
 | Products (list) | `ProductResource.php` |
-| Funds & Grants (list) | `plugins/Donations/Filament/Resources/FundResource.php` |
+| Funds & Grants (list) | `vendor/nonprofitcrm/donations/Filament/Resources/FundResource.php` |
 | Campaigns (list) | `CampaignResource.php` |
 | Finance Settings | `Filament/Pages/Settings/FinanceSettingsPage.php` |
 
@@ -119,14 +119,14 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Importer | `Filament/Pages/ImporterPage.php` |
 | Import Contacts | `Filament/Pages/ImportContactsPage.php` |
 | Import Events | `vendor/nonprofitcrm/events/Filament/Pages/ImportEventsPage.php` |
-| Import Donations | `plugins/Donations/Filament/Pages/ImportDonationsPage.php` |
+| Import Donations | `vendor/nonprofitcrm/donations/Filament/Pages/ImportDonationsPage.php` |
 | Import Memberships | `Filament/Pages/ImportMembershipsPage.php` |
 | Import Invoice Details | `Filament/Pages/ImportInvoiceDetailsPage.php` |
 | Import Notes | `Filament/Pages/ImportNotesPage.php` |
 | Import History | `Filament/Pages/ImportHistoryPage.php` |
 | Import Progress (contacts) | `Filament/Pages/ImportProgressPage.php` |
 | Import Progress (events) | `vendor/nonprofitcrm/events/Filament/Pages/ImportEventsProgressPage.php` |
-| Import Progress (donations) | `plugins/Donations/Filament/Pages/ImportDonationsProgressPage.php` |
+| Import Progress (donations) | `vendor/nonprofitcrm/donations/Filament/Pages/ImportDonationsProgressPage.php` |
 | Import Progress (memberships) | `Filament/Pages/ImportMembershipsProgressPage.php` |
 | Import Progress (invoice details) | `Filament/Pages/ImportInvoiceDetailsProgressPage.php` |
 | Import Progress (notes) | `Filament/Pages/ImportNotesProgressPage.php` |

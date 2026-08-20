@@ -40,7 +40,7 @@ abstract class DonationsRemovedTestCase extends TestCase
         // the squash-boundary redraw moved the donation schema to the plugin).
         // A never-installed composition is proven by the per-composition
         // fresh-install identity check, not here.
-        $app->make('migrator')->path($app->basePath('plugins/Donations/database/migrations'));
+        $app->make('migrator')->path($app->basePath('vendor/nonprofitcrm/donations/database/migrations'));
 
         return $app;
     }

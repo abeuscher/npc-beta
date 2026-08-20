@@ -31,6 +31,8 @@ Survey the plugin's location-keyed touchpoints before starting (each has a step 
 > *Worked example (387):* Payments — six files, no assets, no migrations, no in-plugin tests, no Filament pages; the first **foundation** plugin extracted (consumers reach it only through the surface-13 capability layer, so nothing outside the plugin needed an edit) and the first dependency-carrying package (`stripe/stripe-php` — already package-owned from Stage B, nothing extra at extraction). Touchpoints found: two Dockerfile COPY lines, three direct test file reads (`PaymentModuleBoundaryTest` ×2, `ConventionDriftTest` ×1), two comment-only mentions. Nothing else.
 >
 > *Worked example (388):* Events — 89 files, the known-edges run (first migration-owning, first testsuite-carrying, first with assets since LogoGarden, and the run that emptied `plugins/`). Touchpoints found: five asset-path strings in three widget definitions (plus the EventsListing→BlogPager **core** stylesheet input, which stays a core repo-relative path); two Dockerfile COPY lines; the `Events` phpunit testsuite; nine direct test file reads (`ContentListingWidgetsTest` ×6 + `AppearanceConfigRenameTest` ×1 template reads, plus the two fixture migrator reaches — `EventsRemovedTestCase` / `EventsDisabledViaFlagTestCase`, `basePath('plugins/Events/database/migrations')`); one line-keyed SCSS baseline entry (`WidgetColorTokenConsumptionTest`); the schema-dump owner map in `PluginPackageGuardTest`; seven `thumbnails/static.png` traveling with the copy.
+>
+> *Worked example (391):* Donations — 62 files, the fourth run, every edge D2-proven at smaller scale (second migration-owning, second testsuite-carrying; `plugins/` emptied again with zero new guard relaxations — the 388 set held). Touchpoints found: one asset-path string (DonationForm `script.js`; RecentDonations declares none; no cross-plugin asset input); two Dockerfile COPY lines; the `Donations` phpunit testsuite (14 files); the two fixture migrator reaches (`DonationsRemovedTestCase` / `DonationsDisabledViaFlagTestCase`); **four path reads inside the plugin's own traveling tests** (`DonationsSchemaSession390Test`'s migrator-path assertion + `DonationCreditsImporterUntouchedTest`'s three file reads — a plugin's own tests can carry `plugins/…` reads that must go vendor-relative in the extracted copy, step 3's edit, not step 7's); the schema-dump owner map in `PluginPackageGuardTest`. No procedure deltas — the runbook ran as written.
 
 ## 1. Create the target repository
 
@@ -127,6 +129,8 @@ Either way, per-plugin CI in the extracted repo (the tests boot the full Laravel
 > *Worked example (385/387):* `PluginPilotSession377Test`, `LogoGardenContractRetrofitTest`, `LogoGardenWidgetTest`, and Payments' subject tests stay core.
 >
 > *Worked example (388):* the `Events` testsuite (29 files) re-pointed to `vendor/nonprofitcrm/events/tests` — 236 tests, identical counts from the vendor path.
+>
+> *Worked example (391):* the `Donations` testsuite (14 files) re-pointed to `vendor/nonprofitcrm/donations/tests` — 103 fast + 1 slow, identical counts from the vendor path.
 
 ## 10. Verification gates (all binary; run every one)
 
