@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Resources\PostResource;
+use Plugins\Blog\Filament\Resources\PostResource;
 use App\Models\Page;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

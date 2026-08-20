@@ -4448,16 +4448,16 @@
         },
         {
             "name": "nonprofitcrm/events",
-            "version": "v0.1.2",
+            "version": "v0.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/abeuscher/crm-plugin--events.git",
-                "reference": "a72e17124092fbdfaf108926323718a5b8ac74ac"
+                "reference": "b2569e103017b93e34d78a983dd1a21a8bd23342"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/abeuscher/crm-plugin--events/zipball/a72e17124092fbdfaf108926323718a5b8ac74ac",
-                "reference": "a72e17124092fbdfaf108926323718a5b8ac74ac",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--events/zipball/b2569e103017b93e34d78a983dd1a21a8bd23342",
+                "reference": "b2569e103017b93e34d78a983dd1a21a8bd23342",
                 "shasum": ""
             },
             "require": {
@@ -4474,10 +4474,10 @@
             ],
             "description": "Events vertical plugin — public event pages and registration, ticket tiers, admin resource, importer, reminders, and seven event widgets.",
             "support": {
-                "source": "https://github.com/abeuscher/crm-plugin--events/tree/v0.1.2",
+                "source": "https://github.com/abeuscher/crm-plugin--events/tree/v0.1.3",
                 "issues": "https://github.com/abeuscher/crm-plugin--events/issues"
             },
-            "time": "2026-08-20T06:43:59+00:00"
+            "time": "2026-08-20T20:44:32+00:00"
         },
         {
             "name": "nonprofitcrm/logo-garden",

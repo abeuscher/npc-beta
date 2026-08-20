@@ -226,7 +226,7 @@ it('board_members widget reads grid_background_color into --bm-grid-bg', functio
 
 it('blog_listing widget renders without background_color or text_color reads', function () {
     $html = Blade::render(
-        file_get_contents(base_path('app/Widgets/BlogListing/template.blade.php')),
+        file_get_contents(base_path('plugins/Blog/Widgets/BlogListing/template.blade.php')),
         [
             'config' => [
                 'heading'          => 'Posts',

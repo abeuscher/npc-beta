@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\BlogPager;
+namespace Plugins\Blog\Widgets\BlogPager;
 
 use App\Support\DateFormat;
 use App\Widgets\Contracts\WidgetDefinition;
@@ -32,6 +32,18 @@ class BlogPagerDefinition extends WidgetDefinition
     {
         return ['post'];
     }
+
+    public function template(): string
+    {
+        return "@include('plugin-blog-widgets::BlogPager.template')";
+    }
+
+    // No assets() override — the pre-carve definition declared none. The
+    // shared listing pager bar that lived at app/Widgets/BlogPager/styles.scss
+    // was consumed by the BlogListing and EventsListing declarations, never by
+    // this widget's own template (its pager-link styles are core site styles
+    // in _custom.scss); it is now the core-owned
+    // resources/scss/widgets/_shared-pager.scss (ADR 0007, session 396).
 
     public function schema(): array
     {

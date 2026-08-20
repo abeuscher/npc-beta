@@ -8,7 +8,7 @@ use Plugins\Memberships\Filament\Resources\MembershipResource;
 use App\Filament\Resources\NoteResource;
 use App\Filament\Resources\OrganizationResource;
 use App\Filament\Resources\PageResource;
-use App\Filament\Resources\PostResource;
+use Plugins\Blog\Filament\Resources\PostResource;
 use App\Models\Campaign;
 use App\Models\Collection;
 use App\Models\Contact;

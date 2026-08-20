@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\PostResource\Concerns;
+namespace Plugins\Blog\Filament\Resources\PostResource\Concerns;
 
 use App\Filament\Pages\Settings\CmsSettingsPage;
-use App\Filament\Resources\PostResource;
+use Plugins\Blog\Filament\Resources\PostResource;
 use App\Jobs\ExportBundleJob;
 use App\Models\PageWidget;
 use App\Models\Template;

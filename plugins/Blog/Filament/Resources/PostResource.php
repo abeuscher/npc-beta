@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace Plugins\Blog\Filament\Resources;
 
-use App\Filament\Resources\PostResource\Pages;
+use Plugins\Blog\Filament\Resources\PostResource\Pages;
 use App\Models\Page;
 use App\Models\Template;
 use App\Jobs\ExportBundleJob;

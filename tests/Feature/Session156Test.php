@@ -2,7 +2,7 @@
 
 use Plugins\Events\Filament\Resources\EventResource\Pages\EditEvent;
 use App\Filament\Resources\PageResource\Pages\EditPage;
-use App\Filament\Resources\PostResource\Pages\EditPost;
+use Plugins\Blog\Filament\Resources\PostResource\Pages\EditPost;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\SiteSetting;

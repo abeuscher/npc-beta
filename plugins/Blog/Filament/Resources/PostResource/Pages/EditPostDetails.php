@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\PostResource\Pages;
+namespace Plugins\Blog\Filament\Resources\PostResource\Pages;
 
-use App\Filament\Resources\PostResource;
-use App\Filament\Resources\PostResource\Concerns\HasPostSecondaryActions;
+use Plugins\Blog\Filament\Resources\PostResource;
+use Plugins\Blog\Filament\Resources\PostResource\Concerns\HasPostSecondaryActions;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;

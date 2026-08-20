@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\PostResource\Pages;
+namespace Plugins\Blog\Filament\Resources\PostResource\Pages;
 
-use App\Filament\Resources\PostResource;
-use App\Filament\Resources\PostResource\Concerns\HasPostSecondaryActions;
+use Plugins\Blog\Filament\Resources\PostResource;
+use Plugins\Blog\Filament\Resources\PostResource\Concerns\HasPostSecondaryActions;
 use Filament\Actions;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\EditRecord;
@@ -14,7 +14,7 @@ class EditPost extends EditRecord
 
     protected static string $resource = PostResource::class;
 
-    protected static string $view = 'filament.resources.post-resource.pages.edit-post';
+    protected static string $view = 'plugin-blog::filament.edit-post';
 
     public function getTitle(): string
     {

@@ -88,7 +88,7 @@ it('sync() is idempotent', function () {
 
 it('widgets:: Blade namespace resolves to app/Widgets/{Folder}/template.blade.php', function () {
     expect(view()->exists('widgets::Nav.template'))->toBeTrue();
-    expect(view()->exists('widgets::BlogPager.template'))->toBeTrue();
+    expect(view()->exists('widgets::Hero.template'))->toBeTrue();
     expect(view()->exists('widgets::NoSuchWidget.template'))->toBeFalse();
 })->group('widget-lint');
 

@@ -19,4 +19,5 @@ return [
     Plugins\Donations\DonationsServiceProvider::class,
     Plugins\Memberships\MembershipsServiceProvider::class,
     Plugins\MemberPortal\MemberPortalServiceProvider::class,
+    Plugins\Blog\BlogServiceProvider::class,
 ];

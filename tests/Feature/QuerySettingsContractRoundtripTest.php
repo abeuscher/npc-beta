@@ -8,7 +8,7 @@ use App\Models\Tag;
 use App\Models\WidgetType;
 use App\Services\WidgetRenderer;
 use App\Widgets\BarChart\BarChartDefinition;
-use App\Widgets\BlogListing\BlogListingDefinition;
+use Plugins\Blog\Widgets\BlogListing\BlogListingDefinition;
 use App\Widgets\BoardMembers\BoardMembersDefinition;
 use App\Widgets\Carousel\CarouselDefinition;
 use Plugins\Events\Widgets\EventsListing\EventsListingDefinition;

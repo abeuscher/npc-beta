@@ -3,7 +3,6 @@
 namespace App\Livewire;
 
 use App\Filament\Resources\PageResource;
-use App\Filament\Resources\PostResource;
 use App\Filament\Resources\TemplateResource\Pages\EditPageTemplateChrome;
 use App\Http\Resources\WidgetPreviewResource;
 use App\Models\Page;
@@ -372,10 +371,15 @@ class PageBuilder extends Component
         $pageUrl = $page ? ($base . $path) : '';
 
         // Details URL — only for page/post types that have a details sub-page.
+        // The post details page belongs to the Blog plugin's PostResource
+        // (session 396) — resolved by route name so a blog-absent composition
+        // degrades to no details link instead of a missing class.
         $detailsUrl = null;
         if ($page) {
             if ($page->type === 'post') {
-                $detailsUrl = PostResource::getUrl('details', ['record' => $page]);
+                $detailsUrl = \Illuminate\Support\Facades\Route::has('filament.admin.resources.posts.details')
+                    ? route('filament.admin.resources.posts.details', ['record' => $page])
+                    : null;
             } elseif (in_array($page->type, ['default', 'member', 'system'])) {
                 $detailsUrl = PageResource::getUrl('details', ['record' => $page]);
             }

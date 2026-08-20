@@ -3,9 +3,9 @@
 use App\Filament\Resources\PageResource\Pages\EditPage;
 use App\Filament\Resources\PageResource\Pages\EditPageDetails;
 use App\Filament\Resources\PageResource\Pages\ListPages;
-use App\Filament\Resources\PostResource\Pages\EditPost;
-use App\Filament\Resources\PostResource\Pages\EditPostDetails;
-use App\Filament\Resources\PostResource\Pages\ListPosts;
+use Plugins\Blog\Filament\Resources\PostResource\Pages\EditPost;
+use Plugins\Blog\Filament\Resources\PostResource\Pages\EditPostDetails;
+use Plugins\Blog\Filament\Resources\PostResource\Pages\ListPosts;
 use App\Models\Page;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

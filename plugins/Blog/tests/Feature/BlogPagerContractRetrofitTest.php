@@ -5,7 +5,7 @@ use App\Models\User;
 use App\Models\WidgetType;
 use App\Services\PageContext;
 use App\Services\WidgetRenderer;
-use App\Widgets\BlogPager\BlogPagerDefinition;
+use Plugins\Blog\Widgets\BlogPager\BlogPagerDefinition;
 use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;

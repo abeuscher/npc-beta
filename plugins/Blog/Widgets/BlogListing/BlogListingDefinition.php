@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\BlogListing;
+namespace Plugins\Blog\Widgets\BlogListing;
 
 use App\Support\DateFormat;
 use App\Widgets\Contracts\WidgetDefinition;
@@ -34,11 +34,20 @@ class BlogListingDefinition extends WidgetDefinition
         return true;
     }
 
+    public function template(): string
+    {
+        return "@include('plugin-blog-widgets::BlogListing.template')";
+    }
+
     public function assets(): array
     {
+        // The listing's pager bar consumes the core-owned shared pager
+        // stylesheet (ADR 0007 — shared front-end dependencies are
+        // core-owned; lifted from app/Widgets/BlogPager/styles.scss at the
+        // session-396 carve). EventsListing declares the same core path.
         return [
-            'scss' => ['app/Widgets/BlogListing/styles.scss', 'app/Widgets/BlogPager/styles.scss'],
-            'js'   => ['app/Widgets/BlogListing/script.js'],
+            'scss' => ['plugins/Blog/Widgets/BlogListing/styles.scss', 'resources/scss/widgets/_shared-pager.scss'],
+            'js'   => ['plugins/Blog/Widgets/BlogListing/script.js'],
             'libs' => ['swiper'],
         ];
     }

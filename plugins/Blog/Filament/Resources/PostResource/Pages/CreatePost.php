@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\PostResource\Pages;
+namespace Plugins\Blog\Filament\Resources\PostResource\Pages;
 
-use App\Filament\Resources\PostResource;
+use Plugins\Blog\Filament\Resources\PostResource;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\Template;

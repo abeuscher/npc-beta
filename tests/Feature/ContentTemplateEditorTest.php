@@ -156,7 +156,7 @@ it('post creation can use a content template', function () {
         'is_active'      => true,
     ]);
 
-    \Livewire\Livewire::test(\App\Filament\Resources\PostResource\Pages\CreatePost::class)
+    \Livewire\Livewire::test(\Plugins\Blog\Filament\Resources\PostResource\Pages\CreatePost::class)
         ->fillForm([
             'title'               => 'My First Post',
             'content_template_id' => $ct->id,
@@ -172,7 +172,7 @@ it('post creation can use a content template', function () {
 });
 
 it('post creation with None produces a blank post', function () {
-    \Livewire\Livewire::test(\App\Filament\Resources\PostResource\Pages\CreatePost::class)
+    \Livewire\Livewire::test(\Plugins\Blog\Filament\Resources\PostResource\Pages\CreatePost::class)
         ->fillForm([
             'title'               => 'Blank Post',
             'content_template_id' => 'none',

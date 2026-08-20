@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\PostResource\Pages;
+namespace Plugins\Blog\Filament\Resources\PostResource\Pages;
 
 use App\Filament\Actions\ImportBundleAction;
-use App\Filament\Resources\PostResource;
+use Plugins\Blog\Filament\Resources\PostResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 

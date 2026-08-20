@@ -15,8 +15,6 @@ use App\WidgetPrimitive\Slots\DashboardGridSlot;
 use App\WidgetPrimitive\Slots\PageBuilderCanvasSlot;
 use App\WidgetPrimitive\Slots\RecordDetailSidebarSlot;
 use App\Widgets\BarChart\BarChartDefinition;
-use App\Widgets\BlogListing\BlogListingDefinition;
-use App\Widgets\BlogPager\BlogPagerDefinition;
 use App\Widgets\ButtonRow\ButtonRowDefinition;
 use App\Widgets\BoardMembers\BoardMembersDefinition;
 use App\Widgets\Carousel\CarouselDefinition;
@@ -68,8 +66,6 @@ class WidgetServiceProvider extends ServiceProvider
 
         $registry->register(new TextBlockDefinition());
         $registry->register(new ButtonRowDefinition());
-        $registry->register(new BlogListingDefinition());
-        $registry->register(new BlogPagerDefinition());
         $registry->register(new WebFormDefinition());
         $registry->register(new ProductDisplayDefinition());
         $registry->register(new ProductCarouselDefinition());

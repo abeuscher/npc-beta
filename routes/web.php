@@ -9,7 +9,6 @@ use App\Http\Controllers\ProductCheckoutController;
 use App\Http\Controllers\ProductWaitlistController;
 use App\Http\Controllers\MailChimpWebhookController;
 use App\Http\Controllers\PageController;
-use App\Http\Controllers\PostController;
 use App\Http\Controllers\WidgetThumbnailController;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
@@ -35,10 +34,8 @@ Route::get('/', [PageController::class, 'home']);
 // giving the homepage two crawlable URLs.
 Route::get('/home', fn () => redirect('/', 301))->name('home.redirect');
 
-// Blog routes — prefix is config-driven
-$blogPrefix = config('site.blog_prefix', 'news');
-Route::get("/{$blogPrefix}", [PostController::class, 'index'])->name('posts.index');
-Route::get("/{$blogPrefix}/{slug}", [PostController::class, 'show'])->name('posts.show');
+// The blog routes (posts.index, posts.show) are registered by the Blog
+// plugin (plugins/Blog/routes/web.php) ahead of the catch-all below.
 
 // The donation checkout route (donations.checkout) is registered by the
 // Donations plugin (vendor/nonprofitcrm/donations/routes/web.php).

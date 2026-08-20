@@ -3,7 +3,7 @@
 use App\Filament\Resources\PageResource;
 use App\Filament\Resources\PageResource\Pages\EditPageDetails;
 use App\Filament\Resources\PageResource\Pages\ListPages;
-use App\Filament\Resources\PostResource\Pages\EditPostDetails;
+use Plugins\Blog\Filament\Resources\PostResource\Pages\EditPostDetails;
 use App\Models\Page;
 use App\Models\User;
 use App\Models\WidgetType;

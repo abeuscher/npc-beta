@@ -48,13 +48,13 @@ it('treats a duplicated disabled handle as a set — idempotent by construction'
 });
 
 it('can disable every installed plugin', function () {
-    expect(PluginServiceProvider::enabledProviders(config('plugins'), ['logo-garden', 'payments', 'events', 'donations', 'memberships', 'member-portal']))
+    expect(PluginServiceProvider::enabledProviders(config('plugins'), ['logo-garden', 'payments', 'events', 'donations', 'memberships', 'member-portal', 'blog']))
         ->toBe([]);
 });
 
 it('throws on an unknown handle, naming the bad handle and the valid set', function () {
     PluginServiceProvider::enabledProviders(config('plugins'), ['evnets']);
-})->throws(RuntimeException::class, 'Unknown plugin handle(s) in PLUGINS_DISABLED: evnets. Installed plugin handles: logo-garden, payments, events, donations, memberships, member-portal.');
+})->throws(RuntimeException::class, 'Unknown plugin handle(s) in PLUGINS_DISABLED: evnets. Installed plugin handles: logo-garden, payments, events, donations, memberships, member-portal, blog.');
 
 it('throws even when the unknown handle rides along with valid ones', function () {
     PluginServiceProvider::enabledProviders(config('plugins'), ['events', 'not-a-plugin']);

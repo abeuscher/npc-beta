@@ -55,6 +55,13 @@
                 "type": "vcs",
                 "url": "https://github.com/abeuscher/crm-plugin--member-portal.git"
             }
+        },
+        {
+            "provider": "Plugins\\Blog\\BlogServiceProvider",
+            "source": {
+                "type": "folder",
+                "path": "plugins/Blog"
+            }
         }
     ]
 }

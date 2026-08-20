@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Plugins\Blog\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\Page;
 use App\Services\PageBlockRenderer;
 use App\Services\PageContext;
