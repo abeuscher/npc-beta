@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict xTdiEcSP2UlP3CgMiyQFF7DPCilyxPv5eYM9BowJHo5Ao8aYOoYCqRvX1VCwWom
+\restrict g37IfAz2cGfmjZoK9d77VhCq0zT3hkeqmoaaOCyumHdWIqzfow44pjK0tJNXSZy
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -1036,27 +1036,6 @@ ALTER SEQUENCE public.permissions_id_seq OWNED BY public.permissions.id;
 
 
 --
--- Name: posts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.posts (
-    id uuid NOT NULL,
-    title character varying(255) NOT NULL,
-    slug character varying(255) NOT NULL,
-    excerpt text,
-    content text,
-    author_id bigint,
-    is_published boolean DEFAULT false NOT NULL,
-    published_at timestamp(0) without time zone,
-    meta_title character varying(255),
-    meta_description text,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    deleted_at timestamp(0) without time zone
-);
-
-
---
 -- Name: product_prices; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2005,22 +1984,6 @@ ALTER TABLE ONLY public.permissions
 
 
 --
--- Name: posts posts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.posts
-    ADD CONSTRAINT posts_pkey PRIMARY KEY (id);
-
-
---
--- Name: posts posts_slug_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.posts
-    ADD CONSTRAINT posts_slug_unique UNIQUE (slug);
-
-
---
 -- Name: product_prices product_prices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2531,13 +2494,6 @@ CREATE INDEX pages_source_index ON public.pages USING btree (source);
 
 
 --
--- Name: posts_author_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX posts_author_id_index ON public.posts USING btree (author_id);
-
-
---
 -- Name: product_prices_product_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2961,14 +2917,6 @@ ALTER TABLE ONLY public.pages
 
 
 --
--- Name: posts posts_author_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.posts
-    ADD CONSTRAINT posts_author_id_foreign FOREIGN KEY (author_id) REFERENCES public.users(id) ON DELETE SET NULL;
-
-
---
 -- Name: product_prices product_prices_product_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3108,13 +3056,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict xTdiEcSP2UlP3CgMiyQFF7DPCilyxPv5eYM9BowJHo5Ao8aYOoYCqRvX1VCwWom
+\unrestrict g37IfAz2cGfmjZoK9d77VhCq0zT3hkeqmoaaOCyumHdWIqzfow44pjK0tJNXSZy
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict DQNSfLxDPsnRIQLcJH2UCkKbgRGtyJHnQblxTXJFaXDeGhy78JfneCfJCr2d8Kk
+\restrict ejYLq6MUmiE6SnJKbaMOf5jLWzqafYU8My5NgpaxkLorwMhQiz3WYAOs7AJux52
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3264,5 +3212,5 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 114, true);
 -- PostgreSQL database dump complete
 --
 
-\unrestrict DQNSfLxDPsnRIQLcJH2UCkKbgRGtyJHnQblxTXJFaXDeGhy78JfneCfJCr2d8Kk
+\unrestrict ejYLq6MUmiE6SnJKbaMOf5jLWzqafYU8My5NgpaxkLorwMhQiz3WYAOs7AJux52
 
