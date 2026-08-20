@@ -4514,16 +4514,16 @@
         },
         {
             "name": "nonprofitcrm/member-portal",
-            "version": "v0.1.0",
+            "version": "v0.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/abeuscher/crm-plugin--member-portal.git",
-                "reference": "612c0fb9c5082dd609866b3bb623b2f1b505d178"
+                "reference": "810ca8ae80046467702c2e453b77cb32cdd96be5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/abeuscher/crm-plugin--member-portal/zipball/612c0fb9c5082dd609866b3bb623b2f1b505d178",
-                "reference": "612c0fb9c5082dd609866b3bb623b2f1b505d178",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--member-portal/zipball/810ca8ae80046467702c2e453b77cb32cdd96be5",
+                "reference": "810ca8ae80046467702c2e453b77cb32cdd96be5",
                 "shasum": ""
             },
             "require": {
@@ -4540,10 +4540,10 @@
             ],
             "description": "Member Portal vertical plugin — the portal auth stack (guard, account provider, password broker, portal.auth middleware alias), the six auth/account controllers with all 17 portal routes, and the six portal widgets.",
             "support": {
-                "source": "https://github.com/abeuscher/crm-plugin--member-portal/tree/v0.1.0",
+                "source": "https://github.com/abeuscher/crm-plugin--member-portal/tree/v0.1.1",
                 "issues": "https://github.com/abeuscher/crm-plugin--member-portal/issues"
             },
-            "time": "2026-08-20T17:36:16+00:00"
+            "time": "2026-08-20T18:00:26+00:00"
         },
         {
             "name": "nonprofitcrm/memberships",
