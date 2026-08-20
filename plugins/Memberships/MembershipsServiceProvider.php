@@ -80,9 +80,10 @@ class MembershipsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // No loadMigrationsFrom: the memberships and membership_tiers tables
-        // stay in core's schema dump until this block's package phase moves
-        // the squash boundary (contract surface 5).
+        // Plugin-owned schema (contract surface 5, session 393): the
+        // membership_tiers and memberships create-table migrations run after
+        // core's dump in the deterministic install order.
+        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
 
         View::addNamespace('plugin-memberships', __DIR__ . '/resources/views');
         View::addNamespace('plugin-memberships-widgets', __DIR__ . '/Widgets');

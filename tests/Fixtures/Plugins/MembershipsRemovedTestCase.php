@@ -15,9 +15,6 @@ use Tests\TestCase;
  * before providers register — the DonationsRemovedTestCase pattern. Tests on
  * the plain Tests\TestCase are the enabled twin.
  *
- * No migrator path is registered: the memberships and membership_tiers tables
- * are core-dump tables until this block's package phase moves the squash
- * boundary — the caveat expires when the schema moves (the 389→390 precedent).
  */
 abstract class MembershipsRemovedTestCase extends TestCase
 {
@@ -34,6 +31,17 @@ abstract class MembershipsRemovedTestCase extends TestCase
         });
 
         $app->make(Kernel::class)->bootstrap();
+
+        // Disabled ≠ uninstalled (contract surface 5): this fixture models
+        // installed-then-disabled — activation stripped, schema present, data
+        // kept. The provider never boots, so its loadMigrationsFrom never runs
+        // — register the plugin's migration path directly so migrate:fresh
+        // still creates the two membership tables the data-kept assertions
+        // query (the DonationsRemovedTestCase mechanics; session 393, arc D4 —
+        // the squash-boundary redraw moved the membership schema to the
+        // plugin). A never-installed composition is proven by the
+        // per-composition fresh-install identity check, not here.
+        $app->make('migrator')->path($app->basePath('vendor/nonprofitcrm/memberships/database/migrations'));
 
         return $app;
     }

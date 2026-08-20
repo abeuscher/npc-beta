@@ -171,7 +171,14 @@ class DatabaseSeeder extends Seeder
         }
 
         // ── Membership tiers ─────────────────────────────────────────────────
-        $this->call(MembershipTierSeeder::class);
+        // Composition safety (session 393, contract surface 5): the
+        // membership_tiers table is plugin-owned schema — seed the default
+        // tier only when the memberships surface is present (route presence,
+        // the established plugin-presence signal). A memberships-absent
+        // composition seeds no tier row and touches no membership table.
+        if (\Illuminate\Support\Facades\Route::has('membership.checkout')) {
+            $this->call(MembershipTierSeeder::class);
+        }
 
         // ── Base pages (home, about, contact, events, blog) ─────────────────
         $this->call(BasePageSeeder::class);

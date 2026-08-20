@@ -148,6 +148,16 @@ final class ContractResolver
      */
     private function resolveMembershipTierList(DataContract $contract, array &$cache): array
     {
+        // Composition safety (contract surface 5 core-model caveat, session
+        // 393): the membership_tiers table is plugin-owned schema, and the
+        // seeded portal signup page consumes this arm on every composition —
+        // on a memberships-absent install the read must degrade to an empty
+        // list, not error. Route presence is the established plugin-presence
+        // signal (the setup-checklist fund-row precedent).
+        if (! \Illuminate\Support\Facades\Route::has('membership.checkout')) {
+            return ['items' => []];
+        }
+
         $key = 'membership_tier:list';
         if (! array_key_exists($key, $cache)) {
             $cache[$key] = MembershipTier::query()

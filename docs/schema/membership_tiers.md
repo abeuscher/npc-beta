@@ -1,6 +1,8 @@
 ## membership_tiers
 
-Admin-configurable membership tier definitions. One default "Standard" tier is seeded on install.
+**Owned by the Memberships plugin (`nonprofitcrm/memberships`, extracted to `crm-plugin--memberships` session 393)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
+Admin-configurable membership tier definitions. One default "Standard" tier is seeded on install when the memberships surface is present (the seeder call is route-presence-gated, session 393).
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|

@@ -1,5 +1,7 @@
 ## memberships
 
+**Owned by the Memberships plugin (`nonprofitcrm/memberships`, extracted to `crm-plugin--memberships` session 393)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
 Membership records for contacts, including tier, status, and dates. Multiple records per contact are normal (history preserved).
 
 | Column | Type | Nullable | Notes |

@@ -1,10 +1,15 @@
 @php
-    $tiers = $widgetData['tiers']['items'] ?? [];
+    // Composition safety (session 393): on a memberships-absent composition
+    // the checkout route does not exist — render the signup form without the
+    // tier/checkout half. With no tiers the script's selectedTierIsPaid is
+    // always false, so the empty checkoutUrl is never read.
+    $membershipsActive = \Illuminate\Support\Facades\Route::has('membership.checkout');
+    $tiers = $membershipsActive ? ($widgetData['tiers']['items'] ?? []) : [];
 
     $signupConfig = [
         'tiers'          => array_map(fn ($t) => ['id' => $t['id'], 'price' => (float) $t['default_price']], $tiers),
         'selectedTierId' => old('tier_id', ''),
-        'checkoutUrl'    => route('membership.checkout'),
+        'checkoutUrl'    => $membershipsActive ? route('membership.checkout') : '',
         'signupUrl'      => route('portal.signup.post'),
     ];
 @endphp

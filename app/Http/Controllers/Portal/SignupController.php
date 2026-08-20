@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
 
 class SignupController extends Controller
 {
@@ -38,13 +39,25 @@ class SignupController extends Controller
             return redirect()->route('portal.verification.notice');
         }
 
-        $validated = $request->validate([
+        // Composition safety (session 393): membership_tiers is plugin-owned
+        // schema — on a memberships-absent composition the exists rule and
+        // the complimentary-tier create below must not run. Route presence is
+        // the established plugin-presence signal; with the rule dropped,
+        // tier_id never reaches $validated and the tier block self-skips.
+        $membershipsActive = Route::has('membership.checkout');
+
+        $rules = [
             'first_name' => ['required', 'string', 'max:100'],
             'last_name'  => ['required', 'string', 'max:100'],
             'email'      => ['required', 'email', 'max:255'],
             'password'   => ['required', 'string', 'min:12', 'confirmed'],
-            'tier_id'    => ['nullable', 'uuid', 'exists:membership_tiers,id'],
-        ]);
+        ];
+
+        if ($membershipsActive) {
+            $rules['tier_id'] = ['nullable', 'uuid', 'exists:membership_tiers,id'];
+        }
+
+        $validated = $request->validate($rules);
 
         // If a portal account already exists for this email, give no signal — silent redirect.
         if (PortalAccount::where('email', $validated['email'])->exists()) {

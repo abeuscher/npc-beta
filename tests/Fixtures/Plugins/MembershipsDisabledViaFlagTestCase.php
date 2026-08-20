@@ -16,10 +16,6 @@ use Tests\TestCase;
  * where PLUGINS_DISABLED would put it, and PluginServiceProvider's filter
  * does the subtraction. Runtime-disabled must reproduce the strip-the-line
  * state the removal mirror asserts.
- *
- * No migrator path is registered: the two membership tables are core-dump
- * tables until this block's package phase (the caveat expires with the
- * squash-boundary redraw).
  */
 abstract class MembershipsDisabledViaFlagTestCase extends TestCase
 {
@@ -32,6 +28,13 @@ abstract class MembershipsDisabledViaFlagTestCase extends TestCase
         });
 
         $app->make(Kernel::class)->bootstrap();
+
+        // Disabled ≠ uninstalled (contract surface 5): the provider never
+        // registers, so its loadMigrationsFrom never runs — register the
+        // plugin's migration path directly so the two membership tables exist
+        // for the data-kept assertions (the DonationsDisabledViaFlagTestCase
+        // mechanics; session 393, arc D4).
+        $app->make('migrator')->path($app->basePath('vendor/nonprofitcrm/memberships/database/migrations'));
 
         return $app;
     }
