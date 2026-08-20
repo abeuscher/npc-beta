@@ -15,7 +15,12 @@ class PageContext
     public function __construct(?Page $currentPage = null)
     {
         $this->currentPage = $currentPage;
-        $this->currentUser = auth('portal')->user();
+        // Composition safety (session 394): the portal guard is injected by
+        // the MemberPortal plugin — on a portal-absent composition auth('portal')
+        // throws on the undefined guard, so gate on the capability.
+        $this->currentUser = app(\App\Plugins\CapabilityRegistry::class)->present('member-portal')
+            ? auth('portal')->user()
+            : null;
     }
 
     public function form(string $handle): ?Form

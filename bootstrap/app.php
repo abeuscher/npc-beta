@@ -38,9 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
             '/webhooks/*',
         ]);
 
-        $middleware->alias([
-            'portal.auth' => \App\Http\Middleware\PortalAuthenticate::class,
-        ]);
+        // The 'portal.auth' middleware alias is registered by the MemberPortal
+        // plugin's provider (session 394 — the first plugin-owned alias;
+        // docs/plugin-contract.md surface 4).
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('backup:clean')->daily()->at('01:00');

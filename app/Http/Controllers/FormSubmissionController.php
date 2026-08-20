@@ -39,8 +39,13 @@ class FormSubmissionController extends Controller
         }
 
         // ── Portal collision check ────────────────────────────────────────
+        // Composition safety (session 394): the check reads the portal guard,
+        // which exists only when the MemberPortal plugin is registered. With
+        // the portal absent nobody can act on the collision mail's guidance,
+        // so the whole check is portal-composition behavior.
+        $portalPresent  = app(\App\Plugins\CapabilityRegistry::class)->present('member-portal');
         $submittedEmail = $request->input('email') ?? '';
-        if ($submittedEmail) {
+        if ($portalPresent && $submittedEmail) {
             $portalAccount = PortalAccount::where('email', $submittedEmail)
                 ->where('is_active', true)
                 ->first();

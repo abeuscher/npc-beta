@@ -46,6 +46,13 @@
                 "type": "vcs",
                 "url": "https://github.com/abeuscher/crm-plugin--memberships.git"
             }
+        },
+        {
+            "provider": "Plugins\\MemberPortal\\MemberPortalServiceProvider",
+            "source": {
+                "type": "folder",
+                "path": "plugins/MemberPortal"
+            }
         }
     ]
 }

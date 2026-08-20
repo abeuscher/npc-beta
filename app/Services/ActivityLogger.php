@@ -14,10 +14,15 @@ class ActivityLogger
             $actorType = 'system';
             $actorId   = null;
 
+            // The portal guard exists only when the MemberPortal plugin is
+            // registered (session 394) — an undefined guard name throws, which
+            // the catch below would swallow along with the log row itself.
+            $portalPresent = app(\App\Plugins\CapabilityRegistry::class)->present('member-portal');
+
             if (Auth::guard('web')->check()) {
                 $actorType = 'admin';
                 $actorId   = Auth::guard('web')->id();
-            } elseif (Auth::guard('portal')->check()) {
+            } elseif ($portalPresent && Auth::guard('portal')->check()) {
                 $actorType = 'portal';
                 $actorId   = Auth::guard('portal')->id();
             }

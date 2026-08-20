@@ -1,0 +1,50 @@
+<?php
+
+namespace Plugins\MemberPortal\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\PageController;
+use App\Models\PortalAccount;
+use App\Models\SiteSetting;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Password;
+use Illuminate\View\View;
+
+class ForgotPasswordController extends Controller
+{
+    public function show(): mixed
+    {
+        if (Auth::guard('portal')->check()) {
+            return redirect()->route('portal.account');
+        }
+
+        $prefix = SiteSetting::get('system_prefix', 'system');
+        $slug   = $prefix ? $prefix . '/forgot-password' : 'forgot-password';
+
+        return app(PageController::class)->show($slug);
+    }
+
+    public function sent(): View
+    {
+        return view('plugin-member-portal::forgot-password-sent');
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $account = PortalAccount::where('email', $request->input('email'))->first();
+
+        if ($account) {
+            Password::broker('portal_accounts')->sendResetLink(
+                ['email' => $request->input('email')]
+            );
+        }
+
+        return redirect()->route('portal.password.sent');
+    }
+}

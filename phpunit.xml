@@ -20,6 +20,9 @@
         <testsuite name="Memberships">
             <directory>vendor/nonprofitcrm/memberships/tests</directory>
         </testsuite>
+        <testsuite name="MemberPortal">
+            <directory>plugins/MemberPortal/tests</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

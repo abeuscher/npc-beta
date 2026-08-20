@@ -42,10 +42,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        'portal' => [
-            'driver'   => 'session',
-            'provider' => 'portal_accounts',
-        ],
+        // The 'portal' guard (with its 'portal_accounts' provider and password
+        // broker) is injected at runtime by the MemberPortal plugin's provider
+        // (session 394 decision 2 — the auth stack travels with the plugin).
+        // On a portal-absent composition the guard is not defined; core reads
+        // gate on the 'member-portal' capability before touching it.
     ],
 
     /*
@@ -75,11 +76,6 @@ return [
         //     'driver' => 'database',
         //     'table' => 'users',
         // ],
-
-        'portal_accounts' => [
-            'driver' => 'eloquent',
-            'model'  => App\Models\PortalAccount::class,
-        ],
     ],
 
     /*
@@ -106,12 +102,6 @@ return [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
-            'throttle' => 60,
-        ],
-        'portal_accounts' => [
-            'provider' => 'portal_accounts',
-            'table'    => 'portal_password_reset_tokens',
-            'expire'   => 60,
             'throttle' => 60,
         ],
     ],

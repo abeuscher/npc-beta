@@ -28,6 +28,12 @@ class PageController extends Controller
             ->firstOrFail();
 
         if ($page->type === 'member') {
+            // Composition safety (session 394): with the MemberPortal plugin
+            // absent there is no portal guard and no portal.login route —
+            // member pages are unreachable rather than erroring. The full
+            // portal-absent page-topology pass is package-phase work.
+            abort_unless(app(\App\Plugins\CapabilityRegistry::class)->present('member-portal'), 404);
+
             $portalUser = auth('portal')->user();
 
             if (! $portalUser) {

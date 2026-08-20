@@ -3,8 +3,6 @@
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventRegistration;
-use App\Models\Membership;
-use App\Models\MembershipTier;
 use App\Models\PortalAccount;
 use App\Models\Transaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -163,53 +161,10 @@ it('paid event redirects from free register route', function () {
     expect(EventRegistration::where('email', 'paid@example.com')->count())->toBe(0);
 });
 
-// ── Free membership signup still works ───────────────────────────────────────
-// (The membership checkout controller + promotion tests moved to the
-// Memberships plugin suite at the session-392 carve; these stay — their
-// subject is core's Portal\SignupController, memberships are the fixture.)
-
-it('free membership signup still works through existing path', function () {
-    $tier = MembershipTier::factory()->create([
-        'default_price'    => null,
-        'billing_interval' => 'lifetime',
-        'is_active'        => true,
-    ]);
-
-    $response = $this->post(route('portal.signup.post'), [
-        'first_name'            => 'Free',
-        'last_name'             => 'Member',
-        'email'                 => 'freemember@example.com',
-        'password'              => 'securepassword1',
-        'password_confirmation' => 'securepassword1',
-        'tier_id'               => $tier->id,
-    ]);
-
-    $response->assertRedirect(route('portal.verification.notice'));
-
-    $contact = Contact::where('email', 'freemember@example.com')->first();
-    expect($contact)->not->toBeNull();
-
-    $membership = Membership::where('contact_id', $contact->id)->first();
-    expect($membership)->not->toBeNull()
-        ->and($membership->status)->toBe('active')
-        ->and($membership->tier_id)->toBe($tier->id);
-});
-
-it('signup without tier creates no membership', function () {
-    $response = $this->post(route('portal.signup.post'), [
-        'first_name'            => 'No',
-        'last_name'             => 'Tier',
-        'email'                 => 'notier@example.com',
-        'password'              => 'securepassword1',
-        'password_confirmation' => 'securepassword1',
-    ]);
-
-    $response->assertRedirect(route('portal.verification.notice'));
-
-    $contact = Contact::where('email', 'notier@example.com')->first();
-    expect($contact)->not->toBeNull();
-    expect(Membership::where('contact_id', $contact->id)->count())->toBe(0);
-});
+// ── Free membership signup ────────────────────────────────────────────────────
+// (The two free-signup tests moved to the MemberPortal plugin suite at the
+// session-394 carve — their subject, Portal\SignupController, moved with it:
+// plugins/MemberPortal/tests/Feature/PortalSignupTest.php.)
 
 // ── Portal event checkout ───────────────────────────────────────────────────
 

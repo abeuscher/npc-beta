@@ -155,9 +155,9 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Any published page (`/{slug}`) | `PageController::show` |
 | Blog index (`/{blog_prefix}`) | `PostController::index` |
 | Single blog post (`/{blog_prefix}/{slug}`) | `PostController::show` |
-| Member portal login | `LoginController` |
-| Member portal signup | `SignupController` |
-| Member portal account dashboard | `AccountController` |
+| Member portal login | `Plugins\MemberPortal\Http\Controllers\LoginController` |
+| Member portal signup | `Plugins\MemberPortal\Http\Controllers\SignupController` |
+| Member portal account dashboard | `Plugins\MemberPortal\Http\Controllers\AccountController` |
 | Event registration (POST) | `Plugins\Events\Http\Controllers\EventController::register` |
 | Product checkout (POST) | `ProductCheckoutController::store` |
 | Donation checkout (POST) | `Plugins\Donations\Http\Controllers\DonationCheckoutController::store` |
@@ -168,13 +168,13 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Events API (JSON) (`/api/events.json`) | closure in `vendor/nonprofitcrm/events/routes/web.php` (the extracted Events plugin, session 388) |
 | Sitemap (`/sitemap.xml`) | `SitemapController::index` |
 | Robots (`/robots.txt`) | `RobotsController::index` |
-| Portal password reset | `Portal\PasswordResetController` |
-| Portal email verification | `Portal\EmailVerificationController` |
-| Portal account update (address, password, email) | `Portal\AccountController` |
+| Portal password reset | `Plugins\MemberPortal\Http\Controllers\ResetPasswordController` |
+| Portal email verification | `Plugins\MemberPortal\Http\Controllers\EmailVerificationController` |
+| Portal account update (address, password, email) | `Plugins\MemberPortal\Http\Controllers\AccountController` |
 
-All public controllers live in `app/Http/Controllers/`. Portal routes are prefixed by the `portal_prefix` site setting (default: `members`). Blog prefix is the `blog_prefix` site setting (default: `news`).
+All core public controllers live in `app/Http/Controllers/`; the portal controllers live in the MemberPortal plugin (`plugins/MemberPortal/Http/Controllers/`, session 394). Portal routes are prefixed by the `portal_prefix` site setting (default: `members`). Blog prefix is the `blog_prefix` site setting (default: `news`).
 
-**Routing prefixes are namespaces, not route→page bindings (security boundary).** The Routing section of General Settings (`system_prefix`, `portal_prefix`, `blog_prefix`, `events_prefix`, `donations_prefix`) renames the first URL path segment for each content type — nothing more. The **authentication flow is deliberately not remappable**: sign-in / sign-up / password-reset / email-verify GET routes are served by fixed controllers (`Portal\LoginController` etc.) under `system_prefix`, and their POST endpoints sit at fixed root paths (`/login`, `/logout`, …) that ignore the prefix so a form action never depends on operator-editable config. The operator may rename the `system_prefix` segment, but cannot point the login route at an arbitrary CMS page — that would let the auth surface be remapped onto editable content. The content prefixes (blog/events/portal/donations) only rename where content lives and are fully operator-editable because doing so is cheap and safe. In short: prefixes are configurable; the binding of the auth flow to its controllers is not.
+**Routing prefixes are namespaces, not route→page bindings (security boundary).** The Routing section of General Settings (`system_prefix`, `portal_prefix`, `blog_prefix`, `events_prefix`, `donations_prefix`) renames the first URL path segment for each content type — nothing more. The **authentication flow is deliberately not remappable**: sign-in / sign-up / password-reset / email-verify GET routes are served by fixed controllers (the MemberPortal plugin's `LoginController` etc.) under `system_prefix`, and their POST endpoints sit at fixed root paths (`/login`, `/logout`, …) that ignore the prefix so a form action never depends on operator-editable config. The operator may rename the `system_prefix` segment, but cannot point the login route at an arbitrary CMS page — that would let the auth surface be remapped onto editable content. The content prefixes (blog/events/portal/donations) only rename where content lives and are fully operator-editable because doing so is cheap and safe. In short: prefixes are configurable; the binding of the auth flow to its controllers is not.
 
 > **Member portal page topology (session 337).** Auth pages live under `system_prefix` (`/system/login`, `/system/signup`, `/system/forgot-password`). The logged-in portal — dashboard, account edit, event registrations — lives under `portal_prefix` (`/members`, `/members/account`, `/members/event-registrations`) as `type=member` pages served by the catch-all page route (auth + verified-email enforced in `PageController::show`). Post-login lands on the `/members` dashboard; the legacy `/system/account` path is a redirect alias to it. The `portal` navigation menu (`layouts.portal`) links the `/members` pages.
 

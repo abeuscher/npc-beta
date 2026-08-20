@@ -221,6 +221,13 @@ final class ContractResolver
      */
     private function resolvePortalMemberOne(DataContract $contract): array
     {
+        // Composition safety (session 394): the portal guard is injected by
+        // the MemberPortal plugin — with it absent the arm resolves to the
+        // same logged-out shape instead of touching an undefined guard.
+        if (! app(\App\Plugins\CapabilityRegistry::class)->present('member-portal')) {
+            return ['item' => null];
+        }
+
         $member = auth('portal')->user();
         if ($member === null) {
             return ['item' => null];
