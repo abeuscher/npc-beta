@@ -6,7 +6,7 @@ use Plugins\Donations\Filament\Resources\DonationResource;
 use App\Filament\Resources\EmailTemplateResource;
 use Plugins\Events\Filament\Resources\EventResource;
 use Plugins\Donations\Filament\Resources\FundResource;
-use App\Filament\Resources\MembershipTierResource;
+use Plugins\Memberships\Filament\Resources\MembershipTierResource;
 use App\Filament\Resources\PageResource;
 use App\Filament\Resources\ProductResource;
 use App\Filament\Resources\WidgetTypeResource;

@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\SitemapController;
-use App\Http\Controllers\MembershipCheckoutController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\DocsController;
@@ -78,7 +77,6 @@ $systemBase   = $systemPrefix ? '/' . $systemPrefix : '';
 
 Route::get("{$systemBase}/signup",  [SignupController::class, 'show'])->name('portal.signup');
 Route::post('/signup', [SignupController::class, 'store'])->name('portal.signup.post')->middleware('throttle:10,1');
-Route::post('/membership/checkout', [MembershipCheckoutController::class, 'store'])->name('membership.checkout')->middleware('throttle:10,1');
 
 Route::get("{$systemBase}/login",   [LoginController::class, 'show'])->name('portal.login');
 Route::post('/login',  [LoginController::class, 'store'])->name('portal.login.post')->middleware('throttle:10,1');

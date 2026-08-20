@@ -4,7 +4,7 @@ use App\Importers\ContactFieldRegistry;
 use Plugins\Donations\Importers\DonationFieldRegistry;
 use Plugins\Events\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
-use App\Importers\MembershipFieldRegistry;
+use Plugins\Memberships\Importers\MembershipFieldRegistry;
 use Plugins\Events\Importers\RegistrationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;
 use App\Services\Import\CsvTemplateService;
@@ -62,7 +62,7 @@ it('donations template includes donation and transaction columns', function () {
 });
 
 it('memberships template includes membership and contact match columns', function () {
-    $headers = CsvTemplateService::membershipHeaders();
+    $headers = CsvTemplateService::headersFor('memberships');
 
     expect($headers)->toContain('Membership Level / Tier');
     expect($headers)->toContain('Member Since');

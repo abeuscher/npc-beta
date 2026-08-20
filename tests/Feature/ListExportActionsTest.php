@@ -6,7 +6,7 @@ use Plugins\Donations\Filament\Resources\DonationResource\Pages\ListDonations;
 use Plugins\Events\Filament\Resources\EventResource\Pages\ListEvents;
 use Plugins\Events\Filament\Resources\EventResource\Pages\ViewRegistrations;
 use Plugins\Donations\Filament\Resources\FundResource\Pages\ListFunds;
-use App\Filament\Resources\MembershipResource\Pages\ListMemberships;
+use Plugins\Memberships\Filament\Resources\MembershipResource\Pages\ListMemberships;
 use App\Filament\Resources\NoteResource\Pages\ListNotes;
 use App\Filament\Resources\OrganizationResource\Pages\ListOrganizations;
 use App\Filament\Resources\TransactionResource\Pages\ListTransactions;

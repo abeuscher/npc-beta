@@ -55,7 +55,7 @@ it('each CSV emits headers matching CsvTemplateService exactly', function () {
         'contacts.csv'        => CsvTemplateService::contactHeaders(),
         'events.csv'          => CsvTemplateService::headersFor('events'),
         'donations.csv'       => CsvTemplateService::headersFor('donations'),
-        'memberships.csv'     => CsvTemplateService::membershipHeaders(),
+        'memberships.csv'     => CsvTemplateService::headersFor('memberships'),
         'invoice_details.csv' => CsvTemplateService::invoiceDetailHeaders(),
         'notes.csv'           => CsvTemplateService::noteHeaders(),
     ];

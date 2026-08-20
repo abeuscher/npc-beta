@@ -4,7 +4,7 @@ use App\Importers\ContactFieldRegistry;
 use Plugins\Donations\Importers\DonationFieldRegistry;
 use Plugins\Events\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
-use App\Importers\MembershipFieldRegistry;
+use Plugins\Memberships\Importers\MembershipFieldRegistry;
 use App\Importers\NoteFieldRegistry;
 use Plugins\Events\Importers\RegistrationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;

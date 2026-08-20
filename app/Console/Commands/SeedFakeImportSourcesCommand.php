@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Importers\ContactFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
-use App\Importers\MembershipFieldRegistry;
 use App\Importers\NoteFieldRegistry;
 use App\Models\ImportSource;
 use App\Plugins\ImporterRegistry;
@@ -59,11 +58,17 @@ class SeedFakeImportSourcesCommand extends Command
             ], $force);
         }
 
-        $this->upsert(self::MEMBERSHIPS_LABEL, [
-            'memberships_field_map'         => $this->membershipsFieldMap(),
-            'memberships_custom_field_map'  => [],
-            'memberships_contact_match_key' => 'contact:email',
-        ], $force);
+        // The memberships field map is the Memberships plugin's importer
+        // contribution (contract surface 8); no contribution registered = no
+        // memberships source.
+        $membershipsImporter = app(ImporterRegistry::class)->find('memberships');
+        if ($membershipsImporter !== null) {
+            $this->upsert(self::MEMBERSHIPS_LABEL, [
+                'memberships_field_map'         => ($membershipsImporter->fakeSourceFieldMap)(),
+                'memberships_custom_field_map'  => [],
+                'memberships_contact_match_key' => 'contact:email',
+            ], $force);
+        }
 
         $this->upsert(self::INVOICES_LABEL, [
             'invoices_field_map'         => $this->invoicesFieldMap(),
@@ -105,18 +110,6 @@ class SeedFakeImportSourcesCommand extends Command
         foreach (ContactFieldRegistry::fields() as $key => $def) {
             $map[strtolower($def['label'])] = $key;
         }
-        return $map;
-    }
-
-    private function membershipsFieldMap(): array
-    {
-        $map = [];
-        foreach (MembershipFieldRegistry::fields() as $key => $def) {
-            $map[strtolower($def['label'])] = "membership:{$key}";
-        }
-        $map['email']   = 'contact:email';
-        $map['user id'] = 'contact:external_id';
-        $map['phone']   = 'contact:phone';
         return $map;
     }
 

@@ -49,15 +49,16 @@ class GenerateFakeImportCsvsCommand extends Command
         $contacts = $composer->composeContacts($contactCount);
         $emails   = $composer->extractContactEmails($contacts);
 
-        // The events and donations importers ship with their plugins
-        // (contract surface 8); no contribution registered means no template
-        // to target.
-        $eventsImporter    = app(\App\Plugins\ImporterRegistry::class)->find('events');
-        $donationsImporter = app(\App\Plugins\ImporterRegistry::class)->find('donations');
+        // The events, donations, and memberships importers ship with their
+        // plugins (contract surface 8); no contribution registered means no
+        // template to target.
+        $eventsImporter      = app(\App\Plugins\ImporterRegistry::class)->find('events');
+        $donationsImporter   = app(\App\Plugins\ImporterRegistry::class)->find('donations');
+        $membershipsImporter = app(\App\Plugins\ImporterRegistry::class)->find('memberships');
 
-        $events    = $eventsImporter ? $composer->composeEvents($eventRows, $emails) : [];
-        $donations = $donationsImporter ? $composer->composeDonations($donationCount, $emails) : [];
-        $memberships = $composer->composeMemberships($membershipCount, $emails);
+        $events      = $eventsImporter ? $composer->composeEvents($eventRows, $emails) : [];
+        $donations   = $donationsImporter ? $composer->composeDonations($donationCount, $emails) : [];
+        $memberships = $membershipsImporter ? $composer->composeMemberships($membershipCount, $emails) : [];
         $invoices  = $composer->composeInvoiceDetails($invoiceRows, $emails);
         $notes     = $composer->composeNotes($noteCount, $emails);
 
@@ -68,7 +69,9 @@ class GenerateFakeImportCsvsCommand extends Command
         if ($donationsImporter) {
             $this->writeCsv($out . '/donations.csv', CsvTemplateService::headersFor('donations'), $donations, 'donations');
         }
-        $this->writeCsv($out . '/memberships.csv', CsvTemplateService::membershipHeaders(), $memberships, 'memberships');
+        if ($membershipsImporter) {
+            $this->writeCsv($out . '/memberships.csv', CsvTemplateService::headersFor('memberships'), $memberships, 'memberships');
+        }
         $this->writeCsv($out . '/invoice_details.csv', CsvTemplateService::invoiceDetailHeaders(), $invoices, 'invoice_details');
         $this->writeCsv($out . '/notes.csv', CsvTemplateService::noteHeaders(), $notes, 'notes');
 

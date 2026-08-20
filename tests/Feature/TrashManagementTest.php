@@ -4,7 +4,7 @@ use App\Filament\Resources\CampaignResource;
 use App\Filament\Resources\CollectionResource;
 use App\Filament\Resources\ContactResource;
 use App\Filament\Resources\FormResource;
-use App\Filament\Resources\MembershipResource;
+use Plugins\Memberships\Filament\Resources\MembershipResource;
 use App\Filament\Resources\NoteResource;
 use App\Filament\Resources\OrganizationResource;
 use App\Filament\Resources\PageResource;

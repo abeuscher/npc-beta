@@ -24,7 +24,6 @@ use App\Widgets\Hero\HeroDefinition;
 use App\Widgets\Image\ImageDefinition;
 use App\Widgets\Logo\LogoDefinition;
 use App\Widgets\MapEmbed\MapEmbedDefinition;
-use App\Widgets\MembershipStatus\MembershipStatusDefinition;
 use App\Widgets\Memos\MemosDefinition;
 use App\Widgets\Nav\NavDefinition;
 use App\Widgets\PortalAccountDashboard\PortalAccountDashboardDefinition;
@@ -33,7 +32,6 @@ use App\Widgets\PortalContactEdit\PortalContactEditDefinition;
 use App\Widgets\PortalForgotPassword\PortalForgotPasswordDefinition;
 use App\Widgets\PortalLogin\PortalLoginDefinition;
 use App\Widgets\PortalSignup\PortalSignupDefinition;
-use App\Widgets\PricingChart\PricingChartDefinition;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Widgets\QuickActions\QuickActionsDefinition;
 use App\Widgets\RandomDataGenerator\RandomDataGeneratorDefinition;
@@ -93,7 +91,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new BarChartDefinition());
         $registry->register(new CarouselDefinition());
         $registry->register(new BoardMembersDefinition());
-        $registry->register(new PricingChartDefinition());
         $registry->register(new TableDefinition());
         $registry->register(new HeroDefinition());
         $registry->register(new MapEmbedDefinition());
@@ -102,7 +99,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new MemosDefinition());
         $registry->register(new QuickActionsDefinition());
         $registry->register(new RecentNotesDefinition());
-        $registry->register(new MembershipStatusDefinition());
         $registry->register(new RandomDataGeneratorDefinition());
         $registry->register(new SetupChecklistDefinition());
     }

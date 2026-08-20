@@ -4,7 +4,6 @@ namespace App\Services\Import;
 
 use App\Importers\ContactFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
-use App\Importers\MembershipFieldRegistry;
 use App\Importers\NoteFieldRegistry;
 use App\Importers\OrganizationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;
@@ -30,22 +29,6 @@ class CsvTemplateService
         $headers[] = 'Organization';
         $headers[] = 'Tags';
         $headers[] = 'Notes';
-
-        return $headers;
-    }
-
-    public static function membershipHeaders(): array
-    {
-        $headers = [];
-
-        foreach (MembershipFieldRegistry::options() as $label) {
-            $headers[] = $label;
-        }
-
-        // Contact match columns
-        $headers[] = 'Email';
-        $headers[] = 'User ID';
-        $headers[] = 'Phone';
 
         return $headers;
     }
@@ -106,7 +89,6 @@ class CsvTemplateService
     {
         return match ($type) {
             'contacts'        => static::contactHeaders(),
-            'memberships'     => static::membershipHeaders(),
             'invoice_details' => static::invoiceDetailHeaders(),
             'notes'           => static::noteHeaders(),
             'organizations'   => static::organizationHeaders(),

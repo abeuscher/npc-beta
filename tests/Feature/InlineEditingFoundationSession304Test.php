@@ -227,7 +227,7 @@ it('never annotates a Tier-B field as inline-editable in any widget template', f
 
 it('annotates the expected safe-set inline paths (guard is meaningful)', function () {
     $tb = file_get_contents(base_path('app/Widgets/TextBlock/template.blade.php'));
-    $pc = file_get_contents(base_path('app/Widgets/PricingChart/template.blade.php'));
+    $pc = file_get_contents(base_path('plugins/Memberships/Widgets/PricingChart/template.blade.php'));
 
     expect($tb)->toContain('inline-prose')->toContain("'key' => 'content'");
     expect($pc)

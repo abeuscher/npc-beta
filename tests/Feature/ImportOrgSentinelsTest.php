@@ -3,7 +3,7 @@
 use Plugins\Donations\Filament\Pages\ImportDonationsProgressPage;
 use Plugins\Events\Filament\Pages\ImportEventsProgressPage;
 use App\Filament\Pages\ImportInvoiceDetailsProgressPage;
-use App\Filament\Pages\ImportMembershipsProgressPage;
+use Plugins\Memberships\Filament\Pages\ImportMembershipsProgressPage;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;

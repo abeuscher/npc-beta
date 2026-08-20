@@ -20,7 +20,7 @@ it('loads neither disabled provider while Events still loads', function () {
 });
 
 it('keeps all three lines in config(plugins) — the installed superset is untouched', function () {
-    expect(config('plugins'))->toHaveCount(4)
+    expect(config('plugins'))->toHaveCount(5)
         ->and(config('plugin-activation.disabled'))->toBe(['logo-garden', 'payments']);
 });
 

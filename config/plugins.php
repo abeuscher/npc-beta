@@ -17,4 +17,5 @@ return [
     Plugins\Payments\PaymentsServiceProvider::class,
     Plugins\Events\EventsServiceProvider::class,
     Plugins\Donations\DonationsServiceProvider::class,
+    Plugins\Memberships\MembershipsServiceProvider::class,
 ];

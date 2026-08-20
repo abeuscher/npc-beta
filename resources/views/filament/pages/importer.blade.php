@@ -48,21 +48,6 @@
                 @endif
             @endforeach
 
-            {{-- Import Memberships --}}
-            @if (in_array('membership', $blockedTypes))
-                <div class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-60 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
-                    <x-heroicon-o-identification class="h-10 w-10 text-gray-400" />
-                    <span class="text-base font-semibold text-gray-400">Import Memberships</span>
-                    <span class="text-xs text-gray-400">A previous memberships import is awaiting review.</span>
-                </div>
-            @else
-                <a href="{{ \App\Filament\Pages\ImportMembershipsPage::getUrl() }}"
-                   class="flex flex-col items-center gap-3 rounded-xl border-2 border-primary-300 bg-white p-6 text-center shadow-sm transition hover:border-primary-500 hover:shadow-md dark:bg-gray-900 dark:border-primary-700 dark:hover:border-primary-400">
-                    <x-heroicon-o-identification class="h-10 w-10 text-primary-500" />
-                    <span class="text-base font-semibold">Import Memberships</span>
-                </a>
-            @endif
-
             {{-- Import Invoice Details --}}
             @if (in_array('invoice_detail', $blockedTypes))
                 <div class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-60 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
@@ -131,9 +116,6 @@
                         <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> {{ ucfirst($importer['slug']) }}
                     </button>
                 @endforeach
-                <button wire:click="downloadMembershipsTemplate" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800">
-                    <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> Memberships
-                </button>
                 <button wire:click="downloadInvoiceDetailsTemplate" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800">
                     <x-heroicon-o-arrow-down-tray class="h-3.5 w-3.5" /> Invoice Details
                 </button>

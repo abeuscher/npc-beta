@@ -415,7 +415,6 @@ class AdminPanelProvider extends PanelProvider
                     // deep-dive home pages (contacts / pages).
                     $resources = [
                         'contacts'          => \App\Filament\Resources\ContactResource::class,
-                        'memberships'       => \App\Filament\Resources\MembershipResource::class,
                         'mailingLists'      => \App\Filament\Resources\MailingListResource::class,
                         'notes'             => \App\Filament\Resources\NoteResource::class,
                         'recordDetailViews' => \App\Filament\Resources\RecordDetailViewResource::class,
@@ -433,11 +432,11 @@ class AdminPanelProvider extends PanelProvider
                         }
                     }
 
-                    // The events and donations resources live in their
-                    // plugins, which core cannot name — resolve by route name
-                    // + the same permission each policy's viewAny checks.
-                    // Absent plugin = no entry (the tour step falls back to a
-                    // popover).
+                    // The events, donations, and memberships resources live
+                    // in their plugins, which core cannot name — resolve by
+                    // route name + the same permission each policy's viewAny
+                    // checks. Absent plugin = no entry (the tour step falls
+                    // back to a popover).
                     try {
                         if (\Illuminate\Support\Facades\Route::has('filament.admin.resources.events.index')
                             && (auth()->user()?->can('view_any_event') ?? false)) {
@@ -450,6 +449,14 @@ class AdminPanelProvider extends PanelProvider
                         if (\Illuminate\Support\Facades\Route::has('filament.admin.resources.donations.index')
                             && (auth()->user()?->can('view_any_donation') ?? false)) {
                             $urls['donations'] = route('filament.admin.resources.donations.index');
+                        }
+                    } catch (\Throwable) {
+                    }
+
+                    try {
+                        if (\Illuminate\Support\Facades\Route::has('filament.admin.resources.memberships.index')
+                            && (auth()->user()?->can('view_any_membership') ?? false)) {
+                            $urls['memberships'] = route('filament.admin.resources.memberships.index');
                         }
                     } catch (\Throwable) {
                     }
