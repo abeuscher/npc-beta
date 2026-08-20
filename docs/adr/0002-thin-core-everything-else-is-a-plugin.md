@@ -1,15 +1,16 @@
 # ADR 0002 — Thin core: everything else is a plugin
 
-**Status:** accepted
-**Date:** session 376 (2026-08-18) — the plugin-architecture planning session; extended by the session 385 reframe (the end-state architecture is the project's finish line)
+**Status:** Accepted — 2026-08-18
 
 ## Context
 
-The founding architectural conviction of the project — carried from the start but never fully implemented — is a minimal core with everything else delivered as plugins, assembled by a central build. Session 376 pressure-tested that conviction against a then-375-session production codebase and settled why it is worth the cost. Three motivations, in increasing order of consequence:
+The founding architectural conviction of the project — carried from the start but never fully implemented — is a minimal core with everything else delivered as plugins, assembled by a central build. We pressure-tested that conviction against what was by then a mature production codebase (~375 working sessions of history) and settled why it is worth the cost. Three motivations, in increasing order of consequence:
 
 1. **The architecture itself** — a small engine with composable features.
-2. **The LLM context-window economy.** A bounded module plus a written contract lets an agent work without loading the whole application. The CRM↔Fleet-Manager relationship (two repos, a versioned contract, ~50 FM sessions run without ever loading the CRM codebase) already proved the pattern in-house. Key correction from that experience: **the context savings come from the boundary and the contract, not from the repo split.**
+2. **The LLM context-window economy.** A bounded module plus a written contract lets an agent work without loading the whole application. The CRM↔Fleet-Manager relationship (two repos, a versioned contract, ~50 working sessions on the other side without ever loading this codebase) already proved the pattern in-house. Key correction from that experience: **the context savings come from the boundary and the contract, not from the repo split.**
 3. **The business premise** — vertical SaaS: one engine, several niche configurations. A niche is a *manifest* (core + chosen plugins + config/seed pack), not new engineering.
+
+In mid-2026 we ruled that the end-state architecture *is* the project's finish line, which turned this from a preference into the committed plan.
 
 ## Decision
 
@@ -30,11 +31,15 @@ The decision rules that draw the line:
 
 ## Consequences
 
-- The core's size sets the floor on what every agent must understand; keeping it thin is what makes the module boundaries pay.
+- The core's size sets the floor on what every agent or engineer must understand; keeping it thin is what makes the module boundaries pay.
 - Core owns the sockets' invariants: nav groups, permission seeding at enable time, the admin theme (plugins ship no admin CSS), panel auth wrapping every plugin admin route.
 - Standing boundary guards (`*ModuleBoundaryTest`, zero allowlist) make the line mechanical rather than judgment-based.
-- The line is cheap to hold *because* of ADR 0001: most features are widgets + admin surfaces + tables, all of which have plugin-shaped channels.
-- Accepted cost: some core seams must tolerate absent plugins (see ADR 0003's composition-safety rule), and a handful of generic engine arms reference plugin-owned models by design.
+
+Costs:
+
+- **Core seams must tolerate absent plugins.** Because core keeps shared models and generic engine arms, some core code references plugin-owned data by design — every such seam carries composition-safety obligations (ADR 0003) that a fatter core would never have needed.
+- **The litmus test requires judgment under pressure.** Features arrive faster than boundaries; the temptation is always to land in core "for now." The guards catch namespace reaches, not placement decisions — holding the line is a review discipline, not an automated one.
+- **Every socket is a forever contract.** Nav groups, permission seeding, discovery paths — once a plugin depends on them, changing them is a breaking change to every plugin.
 
 ## References
 

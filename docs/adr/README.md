@@ -5,22 +5,21 @@ Point-in-time records of the load-bearing architectural decisions in this codeba
 These records complement, and never replace, the living documents:
 
 - `docs/plugin-contract.md` — the current authoritative shape of every surface core publishes to plugins.
-- `sessions/plugin-architecture-plan.md` — the arc plan, question dispositions, and stage ladder.
-- `sessions/tracks/*.md` — per-track planning and retrospectives.
+- `sessions/plugin-architecture-plan.md` — the architecture plan and its question dispositions.
 
 An ADR records what was decided and why *at the time*; the contract records what is true *now*. When they appear to disagree, the contract wins and the ADR is history.
 
 ## Index
 
-| ADR | Title | Decided |
+| ADR | Title | Accepted |
 |---|---|---|
-| [0001](0001-widgets-are-autonomous-components.md) | Widget templates are pure renderers behind declared data contracts | 2026 (enforced session 378) |
-| [0002](0002-thin-core-everything-else-is-a-plugin.md) | Thin core: everything else is a plugin | session 376 |
-| [0003](0003-plugin-owned-data-in-plugin-owned-tables.md) | Plugin data lives in plugin-owned tables — and plugin-owned schema | sessions 376 / 383 |
-| [0004](0004-one-repository-per-plugin.md) | One repository per plugin, composed by a central build | session 385 |
-| [0005](0005-two-layer-activation-without-auto-discovery.md) | Two-layer activation; Laravel auto-discovery deliberately unused | sessions 382–386 |
-| [0006](0006-cross-plugin-communication-through-core-events.md) | Plugins communicate only through core-owned events and capabilities | sessions 381 / 389 |
+| [0001](0001-widget-templates-are-pure-renderers.md) | Widget templates are pure renderers behind declared data contracts | 2026-08-18 |
+| [0002](0002-thin-core-everything-else-is-a-plugin.md) | Thin core: everything else is a plugin | 2026-08-18 |
+| [0003](0003-plugin-owned-data-in-plugin-owned-tables.md) | Plugin-owned data in plugin-owned tables | 2026-08-18 |
+| [0004](0004-one-repository-per-plugin.md) | One repository per plugin | 2026-08-19 |
+| [0005](0005-two-layer-activation-without-auto-discovery.md) | Two-layer activation without auto-discovery | 2026-08-18 |
+| [0006](0006-cross-plugin-communication-through-core-events.md) | Cross-plugin communication through core-owned events | 2026-08-18 |
 
 ## Format
 
-Status / Date / Context / Decision / Consequences, MADR-style. Keep new records to the same shape; link session logs and living docs rather than restating them.
+Status / Context / Decision / Consequences / References. Status is one word and a date; provenance lives in Context and References (dates and commit SHAs, not internal session labels). Consequences name the costs as plainly as the benefits. Keep new records to the same shape; link the living docs rather than restating them.

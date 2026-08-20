@@ -1,13 +1,12 @@
-# ADR 0005 — Two-layer activation; Laravel auto-discovery deliberately unused
+# ADR 0005 — Two-layer activation without auto-discovery
 
-**Status:** accepted
-**Date:** the no-auto-discovery posture at session 382 (arc P6, owner-approved amendment); the per-install layer at session 384 (P8); the manifest layer at session 386 (P10)
+**Status:** Accepted — 2026-08-18
 
 ## Context
 
 Laravel's package auto-discovery (`extra.laravel.providers`) is the framework-conventional way to activate a package, and the obvious question at packaging time was why not use it. Three guarantees in this codebase are load-bearing and all keyed on an *ordered, explicit* provider list: the remove-the-line vanish guarantee (deleting one entry removes a plugin's entire composed surface), the registries-before-plugins binding order (core sockets exist before any plugin registers into them), and plugin-boot-before-core-routes ordering (a plugin GET route must register ahead of the page-slug catch-all). Auto-discovery would move activation to composer edits and surrender ordering to installation order.
 
-Separately, the business premise (niche = manifest; per-install feature dials) needs two different notions of "has this plugin": what is *in the image*, and what is *on for this install*.
+Separately, the business premise (niche = manifest; per-install feature dials) needs two different notions of "has this plugin": what is *in the image*, and what is *on for this install*. The no-auto-discovery ruling landed with the first package (`97097961`, guard `d94a93ac`); the per-install layer (`b2bc6bab`) and the manifest layer (`92a07408`) completed the model.
 
 ## Decision
 
@@ -20,13 +19,17 @@ Activation is **two-layered**, and auto-discovery is banned:
 
 ## Consequences
 
-- **One superset image serves many compositions.** Which plugins run is a per-install `.env` decision (restart + `migrate` on enable — the recorded flip runbook), verified end-to-end by the session-384 one-image run. This is the cheap, common path the niche premise rests on.
+- **One superset image serves many compositions.** Which plugins run is a per-install `.env` decision (restart + `migrate` on enable — the recorded flip runbook), verified end-to-end by a one-image run across full and plugin-disabled compositions (`af40965d`). This is the cheap, common path the niche premise rests on.
 - **Runtime-disabled ≡ strip-the-line by construction** — the flag subtracts at the exact seam the removal fixtures prove, so one set of vanish tests covers both mechanisms. Disabled is inert: routes gone, no schedule, widget rows dropped on sync, **schema and data kept** (ADR 0003).
-- A maintainer familiar with Laravel conventions will be tempted to "fix" the missing auto-discovery; this record and the guards exist so that fails loudly instead of silently.
-- Accepted costs: every new packaged plugin touches manifest + composer + Dockerfile in the same commit (guard-enforced agreement), and the generated config file must never be hand-edited.
-- Stage E's per-distribution composer sets (true code absence per niche) layer on the same manifest authority — recorded boundary, deliberately not built yet.
+
+Costs:
+
+- **We are permanently off the framework's paved road.** Every engineer who knows Laravel will expect auto-discovery and find it banned; this record and the guards exist so the inevitable "fix" fails loudly instead of silently. Framework upgrades that lean harder on discovery will need review against this posture.
+- **Three hand-maintained surfaces must agree** — manifest, `composer.json`, Dockerfile — on every plugin addition or source-kind change, in the same commit. The guard makes disagreement loud, but the ceremony is real.
+- **A generated-but-committed config file is a standing foot-gun**: hand edits are wasted work that fails CI, and the file's existence invites them.
+- Disabled-but-installed code still ships in the image. True per-composition code absence needs per-distribution composer sets — a recorded boundary, deliberately not built.
 
 ## References
 
 - `docs/plugin-contract.md` surface 1 and § The distribution manifest — current authority.
-- Session 384 log (the superset-image verified run); session 386 log (the manifest layer).
+- Commits `97097961` + `d94a93ac` (first package, no-auto-discovery guard, 2026-08-18), `b2bc6bab` + `af40965d` (per-install layer + one-image proof, 2026-08-19), `92a07408` (the manifest layer, 2026-08-19).
