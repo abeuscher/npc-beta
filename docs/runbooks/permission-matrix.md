@@ -135,7 +135,7 @@ Columns appear in this order in every per-surface table: `super_admin → develo
 | Resource | canAccess gate | super_admin | developer | crm_editor | event_manager | volunteer_coordinator | cms_editor | blogger | treasurer | unauth |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **PageResource** | [`view_any_page`](../../app/Filament/Resources/PageResource.php#L21) (canDelete also blocks `type==='system'`) | allow* | allow | deny | deny | deny | allow | allow | deny | redirect |
-| **PostResource** | [`canViewAny: view_any_post`](../../app/Filament/Resources/PostResource.php#L42) (Page model, PagePolicy gates CRUD with `*_page` perms — **brittle**, see Findings) | allow* | allow | deny | deny | deny | allow | allow | deny | redirect |
+| **PostResource** | [`canViewAny: view_any_post`](../../vendor/nonprofitcrm/blog/Filament/Resources/PostResource.php#L42) (Page model, PagePolicy gates CRUD with `*_page` perms — **brittle**, see Findings) | allow* | allow | deny | deny | deny | allow | allow | deny | redirect |
 | **NavigationMenuResource** | [`view_any_navigation_menu`](../../app/Filament/Resources/NavigationMenuResource.php#L17) | allow* | allow | deny | deny | deny | allow | allow | deny | redirect |
 | **CollectionResource** | [`view_any_collection`](../../app/Filament/Resources/CollectionResource.php#L36) | allow* | allow | deny | deny | deny | view (collection) + allow (items) | allow | deny | redirect |
 | **ContentCollectionResource** | [`view_any_collection`](../../app/Filament/Resources/ContentCollectionResource.php#L13) (filtered view of Collection) | allow* | allow | deny | deny | deny | view (collection) + allow (items) | allow | deny | redirect |

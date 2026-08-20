@@ -6,7 +6,7 @@ uses(TestCase::class);
 
 /**
  * Blog module boundary guard (session 396, Plugin Architecture arc D6). The
- * blog vertical lives in plugins/Blog (external repo from the D6 extraction);
+ * blog vertical lives in its own repository (crm-plugin--blog, extracted session 396), consumed as vendor/nonprofitcrm/blog;
  * the boundary is one-directional — the plugin reaching core (Page, the page
  * renderer, the export services, HasPageBuilderForm) is the allowed hard
  * dependency, but nothing in app/ may reference the plugin namespace, with

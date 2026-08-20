@@ -35,7 +35,7 @@ Route::get('/', [PageController::class, 'home']);
 Route::get('/home', fn () => redirect('/', 301))->name('home.redirect');
 
 // The blog routes (posts.index, posts.show) are registered by the Blog
-// plugin (plugins/Blog/routes/web.php) ahead of the catch-all below.
+// plugin (vendor/nonprofitcrm/blog/routes/web.php) ahead of the catch-all below.
 
 // The donation checkout route (donations.checkout) is registered by the
 // Donations plugin (vendor/nonprofitcrm/donations/routes/web.php).

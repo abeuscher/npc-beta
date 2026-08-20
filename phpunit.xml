@@ -24,7 +24,7 @@
             <directory>vendor/nonprofitcrm/member-portal/tests</directory>
         </testsuite>
         <testsuite name="Blog">
-            <directory>plugins/Blog/tests</directory>
+            <directory>vendor/nonprofitcrm/blog/tests</directory>
         </testsuite>
     </testsuites>
     <source>

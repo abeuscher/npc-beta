@@ -86,8 +86,8 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 |---------------------------|----------------------|
 | Pages (list) | `PageResource.php` |
 | Edit Page (includes page builder) | `PageResource/Pages/EditPage.php` |
-| Blog Posts (list) | `PostResource.php` |
-| Edit Post (includes page builder) | `PostResource/Pages/EditPost.php` |
+| Blog Posts (list) | `vendor/nonprofitcrm/blog/Filament/Resources/PostResource.php` |
+| Edit Post (includes page builder) | `vendor/nonprofitcrm/blog/Filament/Resources/PostResource/Pages/EditPost.php` |
 | Events (list) | `vendor/nonprofitcrm/events/Filament/Resources/EventResource.php` |
 | Edit Event | `vendor/nonprofitcrm/events/Filament/Resources/EventResource/Pages/EditEvent.php` |
 | Navigation (list) | `NavigationMenuResource.php` |
@@ -153,8 +153,8 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 |-------------------|-------------------|
 | Home page (`/`) | `PageController::home` |
 | Any published page (`/{slug}`) | `PageController::show` |
-| Blog index (`/{blog_prefix}`) | `PostController::index` |
-| Single blog post (`/{blog_prefix}/{slug}`) | `PostController::show` |
+| Blog index (`/{blog_prefix}`) | `Plugins\Blog\Http\Controllers\PostController::index` |
+| Single blog post (`/{blog_prefix}/{slug}`) | `Plugins\Blog\Http\Controllers\PostController::show` |
 | Member portal login | `Plugins\MemberPortal\Http\Controllers\LoginController` |
 | Member portal signup | `Plugins\MemberPortal\Http\Controllers\SignupController` |
 | Member portal account dashboard | `Plugins\MemberPortal\Http\Controllers\AccountController` |
