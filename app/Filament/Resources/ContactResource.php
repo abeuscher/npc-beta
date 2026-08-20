@@ -134,8 +134,15 @@ class ContactResource extends Resource
 
                 Forms\Components\Section::make('Portal Access')
                     ->collapsible()
+                    // Composition safety (session 395, arc D5): portal_accounts is
+                    // plugin-owned schema — on a portal-absent composition the table
+                    // does not exist, and this section's query would crash every
+                    // contact edit screen. The section is meaningless without a
+                    // portal; omit it entirely. The in-closure guard keeps the
+                    // query unreachable even if the schema closure evaluates.
+                    ->visible(fn (): bool => app(\App\Plugins\CapabilityRegistry::class)->present('member-portal'))
                     ->schema(function (?Contact $record): array {
-                    if (! $record) {
+                    if (! $record || ! app(\App\Plugins\CapabilityRegistry::class)->present('member-portal')) {
                         return [];
                     }
 

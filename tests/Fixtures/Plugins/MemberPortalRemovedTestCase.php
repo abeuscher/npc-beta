@@ -14,13 +14,6 @@ use Tests\TestCase;
  * MemberPortal, so this mirror strips the line after configuration loads and
  * before providers register — the MembershipsRemovedTestCase pattern. Tests
  * on the plain Tests\TestCase are the enabled twin.
- *
- * No migrator path is registered: the portal_accounts and
- * portal_password_reset_tokens tables are core-dump tables this session.
- * THIS CAVEAT EXPIRES at the D5 package phase — the moment the squash
- * boundary redraw moves the portal schema into the plugin, this fixture must
- * register the plugin's migration path so the data-kept assertions still
- * have their tables (the MembershipsRemovedTestCase mechanics).
  */
 abstract class MemberPortalRemovedTestCase extends TestCase
 {
@@ -37,6 +30,17 @@ abstract class MemberPortalRemovedTestCase extends TestCase
         });
 
         $app->make(Kernel::class)->bootstrap();
+
+        // Disabled ≠ uninstalled (contract surface 5): this fixture models
+        // installed-then-disabled — activation stripped, schema present, data
+        // kept. The provider never boots, so its loadMigrationsFrom never runs
+        // — register the plugin's migration path directly so migrate:fresh
+        // still creates the two portal tables the data-kept assertions query
+        // (the MembershipsRemovedTestCase mechanics; session 395, arc D5 —
+        // the squash-boundary redraw moved the portal schema to the plugin).
+        // A never-installed composition is proven by the per-composition
+        // fresh-install identity check, not here.
+        $app->make('migrator')->path($app->basePath('vendor/nonprofitcrm/member-portal/database/migrations'));
 
         return $app;
     }

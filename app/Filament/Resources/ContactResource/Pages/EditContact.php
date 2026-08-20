@@ -210,10 +210,15 @@ class EditContact extends ReadOnlyAwareEditRecord
                             ->send();
                     }),
 
+                // The four portal actions below are gated on the member-portal
+                // capability (session 395, arc D5 — composition safety): their
+                // hidden() closures lazy-load $this->record->portalAccount at page
+                // render, and portal_accounts is plugin-owned schema that does not
+                // exist on a portal-absent composition.
                 Actions\Action::make('grant_portal_access')
                     ->label('Grant Portal Access')
                     ->icon('heroicon-o-key')
-                    ->hidden(fn () => ! auth()->user()?->can('update_contact') || $this->record->portalAccount !== null)
+                    ->hidden(fn () => ! app(\App\Plugins\CapabilityRegistry::class)->present('member-portal') || ! auth()->user()?->can('update_contact') || $this->record->portalAccount !== null)
                     ->modalHeading('Grant Portal Access')
                     ->modalWidth('md')
                     ->form([
@@ -254,7 +259,7 @@ class EditContact extends ReadOnlyAwareEditRecord
                     ->label('Suspend portal access')
                     ->icon('heroicon-o-no-symbol')
                     ->color('danger')
-                    ->hidden(fn () => ! auth()->user()?->can('update_contact') || $this->record->portalAccount === null || ! $this->record->portalAccount->is_active)
+                    ->hidden(fn () => ! app(\App\Plugins\CapabilityRegistry::class)->present('member-portal') || ! auth()->user()?->can('update_contact') || $this->record->portalAccount === null || ! $this->record->portalAccount->is_active)
                     ->requiresConfirmation()
                     ->action(function () {
                         abort_unless(auth()->user()?->can('update_contact'), 403);
@@ -271,7 +276,7 @@ class EditContact extends ReadOnlyAwareEditRecord
                     ->label('Restore portal access')
                     ->icon('heroicon-o-arrow-path')
                     ->color('success')
-                    ->hidden(fn () => ! auth()->user()?->can('update_contact') || $this->record->portalAccount === null || $this->record->portalAccount->is_active)
+                    ->hidden(fn () => ! app(\App\Plugins\CapabilityRegistry::class)->present('member-portal') || ! auth()->user()?->can('update_contact') || $this->record->portalAccount === null || $this->record->portalAccount->is_active)
                     ->requiresConfirmation()
                     ->action(function () {
                         abort_unless(auth()->user()?->can('update_contact'), 403);
@@ -287,7 +292,7 @@ class EditContact extends ReadOnlyAwareEditRecord
                 Actions\Action::make('mark_email_verified')
                     ->label('Mark email verified')
                     ->icon('heroicon-o-check-badge')
-                    ->hidden(fn () => ! auth()->user()?->can('update_contact') || $this->record->portalAccount === null || $this->record->portalAccount->email_verified_at !== null)
+                    ->hidden(fn () => ! app(\App\Plugins\CapabilityRegistry::class)->present('member-portal') || ! auth()->user()?->can('update_contact') || $this->record->portalAccount === null || $this->record->portalAccount->email_verified_at !== null)
                     ->requiresConfirmation()
                     ->action(function () {
                         abort_unless(auth()->user()?->can('update_contact'), 403);

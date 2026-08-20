@@ -16,10 +16,6 @@ use Tests\TestCase;
  * loads, exactly where PLUGINS_DISABLED would put it, and
  * PluginServiceProvider's filter does the subtraction. Runtime-disabled must
  * reproduce the strip-the-line state the removal mirror asserts.
- *
- * No migrator path is registered: the portal schema is core-dump this
- * session. THIS CAVEAT EXPIRES at the D5 package phase — see
- * MemberPortalRemovedTestCase.
  */
 abstract class MemberPortalDisabledViaFlagTestCase extends TestCase
 {
@@ -32,6 +28,11 @@ abstract class MemberPortalDisabledViaFlagTestCase extends TestCase
         });
 
         $app->make(Kernel::class)->bootstrap();
+
+        // Disabled ≠ uninstalled (contract surface 5) — the filtered provider
+        // never boots, so register the plugin's migration path directly; see
+        // MemberPortalRemovedTestCase.
+        $app->make('migrator')->path($app->basePath('vendor/nonprofitcrm/member-portal/database/migrations'));
 
         return $app;
     }

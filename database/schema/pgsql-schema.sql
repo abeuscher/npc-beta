@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict rXF54VMoEhx4aIgvtVUZpA1eTFoTgX39dOCZdh9odMXLvt38YXBgtD1Dikv017q
+\restrict xTdiEcSP2UlP3CgMiyQFF7DPCilyxPv5eYM9BowJHo5Ao8aYOoYCqRvX1VCwWom
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -1036,53 +1036,6 @@ ALTER SEQUENCE public.permissions_id_seq OWNED BY public.permissions.id;
 
 
 --
--- Name: portal_accounts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.portal_accounts (
-    id bigint NOT NULL,
-    contact_id uuid,
-    email character varying(255) NOT NULL,
-    password character varying(255) NOT NULL,
-    email_verified_at timestamp(0) without time zone,
-    remember_token character varying(100),
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    is_active boolean DEFAULT true NOT NULL
-);
-
-
---
--- Name: portal_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.portal_accounts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: portal_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.portal_accounts_id_seq OWNED BY public.portal_accounts.id;
-
-
---
--- Name: portal_password_reset_tokens; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.portal_password_reset_tokens (
-    email character varying(255) NOT NULL,
-    token character varying(255) NOT NULL,
-    created_at timestamp(0) without time zone
-);
-
-
---
 -- Name: posts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1568,13 +1521,6 @@ ALTER TABLE ONLY public.permissions ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- Name: portal_accounts id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.portal_accounts ALTER COLUMN id SET DEFAULT nextval('public.portal_accounts_id_seq'::regclass);
-
-
---
 -- Name: roles id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2056,30 +2002,6 @@ ALTER TABLE ONLY public.permissions
 
 ALTER TABLE ONLY public.permissions
     ADD CONSTRAINT permissions_pkey PRIMARY KEY (id);
-
-
---
--- Name: portal_accounts portal_accounts_email_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.portal_accounts
-    ADD CONSTRAINT portal_accounts_email_unique UNIQUE (email);
-
-
---
--- Name: portal_accounts portal_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.portal_accounts
-    ADD CONSTRAINT portal_accounts_pkey PRIMARY KEY (id);
-
-
---
--- Name: portal_password_reset_tokens portal_password_reset_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.portal_password_reset_tokens
-    ADD CONSTRAINT portal_password_reset_tokens_pkey PRIMARY KEY (email);
 
 
 --
@@ -2609,13 +2531,6 @@ CREATE INDEX pages_source_index ON public.pages USING btree (source);
 
 
 --
--- Name: portal_accounts_contact_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX portal_accounts_contact_id_index ON public.portal_accounts USING btree (contact_id);
-
-
---
 -- Name: posts_author_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3046,14 +2961,6 @@ ALTER TABLE ONLY public.pages
 
 
 --
--- Name: portal_accounts portal_accounts_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.portal_accounts
-    ADD CONSTRAINT portal_accounts_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
-
-
---
 -- Name: posts posts_author_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3201,13 +3108,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict rXF54VMoEhx4aIgvtVUZpA1eTFoTgX39dOCZdh9odMXLvt38YXBgtD1Dikv017q
+\unrestrict xTdiEcSP2UlP3CgMiyQFF7DPCilyxPv5eYM9BowJHo5Ao8aYOoYCqRvX1VCwWom
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict u5RYmP34cwEjmV9Pm1SMnyfg63OqSFlUi2ratUcchQm9Lfru6ULjwrG5TjkQKOO
+\restrict DQNSfLxDPsnRIQLcJH2UCkKbgRGtyJHnQblxTXJFaXDeGhy78JfneCfJCr2d8Kk
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3357,5 +3264,5 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 114, true);
 -- PostgreSQL database dump complete
 --
 
-\unrestrict u5RYmP34cwEjmV9Pm1SMnyfg63OqSFlUi2ratUcchQm9Lfru6ULjwrG5TjkQKOO
+\unrestrict DQNSfLxDPsnRIQLcJH2UCkKbgRGtyJHnQblxTXJFaXDeGhy78JfneCfJCr2d8Kk
 

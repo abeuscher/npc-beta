@@ -23,6 +23,15 @@ class DemoPortalMemberSeeder extends Seeder
 
     public function run(): void
     {
+        // Composition safety (session 395, arc D5): portal_accounts is
+        // plugin-owned schema. This seeder is reachable portal-absent through
+        // the Events plugin's PortalEventRegistrations demo declaration, so it
+        // self-skips on the capability rather than crashing on the missing
+        // table (a member-less demo context is the correct degraded state).
+        if (! app(\App\Plugins\CapabilityRegistry::class)->present('member-portal')) {
+            return;
+        }
+
         $this->call(DemoEventSeeder::class);
 
         $contact = Contact::updateOrCreate(

@@ -46,6 +46,8 @@ class MemberPortalServiceProvider extends ServiceProvider
         View::addNamespace('plugin-member-portal', __DIR__ . '/resources/views');
         View::addNamespace('plugin-member-portal-widgets', __DIR__ . '/Widgets');
 
+        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+
         $widgets = $this->app->make(WidgetRegistry::class);
         $widgets->register(new PortalSignupDefinition());
         $widgets->register(new PortalLoginDefinition());

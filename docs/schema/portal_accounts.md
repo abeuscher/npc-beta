@@ -1,6 +1,8 @@
 ## portal_accounts
 
-Portal login credentials for contacts. One record per contact with member/volunteer portal access.
+**Owned by the Member Portal plugin (`nonprofitcrm/member-portal`, extracted to `crm-plugin--member-portal` session 395)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
+Portal login credentials for contacts. One record per contact with member/volunteer portal access. The `PortalAccount` model stays core (plan § 6.7).
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|

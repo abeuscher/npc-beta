@@ -21,7 +21,13 @@ class SystemPageSeeder extends Seeder
         $authorId = User::value('id');
         $prefix   = SiteSetting::get('system_prefix', '');
 
-        $pages = [
+        // The three auth pages are portal topology — their widgets and their
+        // routes belong to the MemberPortal plugin, so a portal-absent
+        // composition seeds none of them (session 395, arc D5; gated on the
+        // capability, the established portal-presence signal). The chrome
+        // pages (header/footer) below are site-wide and seed on every
+        // composition.
+        $pages = app(\App\Plugins\CapabilityRegistry::class)->present('member-portal') ? [
             [
                 'title'         => 'Log In',
                 'bare_slug'     => 'login',
@@ -37,7 +43,7 @@ class SystemPageSeeder extends Seeder
                 'bare_slug'     => 'forgot-password',
                 'widget_handle' => 'portal_forgot_password',
             ],
-        ];
+        ] : [];
 
         foreach ($pages as $def) {
             $slug = $prefix ? $prefix . '/' . $def['bare_slug'] : $def['bare_slug'];

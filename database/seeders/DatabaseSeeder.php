@@ -182,7 +182,18 @@ class DatabaseSeeder extends Seeder
 
         // ── Base pages (home, about, contact, events, blog) ─────────────────
         $this->call(BasePageSeeder::class);
-        $this->call(PortalPageSeeder::class);
+
+        // The three member-type portal pages (/members, /members/account,
+        // /members/event-registrations) are portal topology — a portal-absent
+        // composition should not seed 404 shells (PageController 404s the
+        // member branch without the member-portal capability, session 394).
+        // Gated on the capability, the established portal-presence signal
+        // (session 395, arc D5; the memberships gate above keys on route
+        // presence and stays as-is — the shipped signal for that plugin).
+        if (app(\App\Plugins\CapabilityRegistry::class)->present('member-portal')) {
+            $this->call(PortalPageSeeder::class);
+        }
+
         $this->call(SystemPageSeeder::class);
         $this->call(TemplateSeeder::class);
         $this->call(DesignSettingsSeeder::class);
