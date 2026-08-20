@@ -5,6 +5,10 @@
     "license": "MIT",
     "repositories": [
         {
+            "type": "path",
+            "url": "plugins/Blog"
+        },
+        {
             "type": "vcs",
             "url": "https://github.com/abeuscher/crm-plugin--member-portal.git"
         },
@@ -40,6 +44,7 @@
         "league/commonmark": "^2.8.2",
         "league/flysystem-aws-s3-v3": "^3.0",
         "mailchimp/marketing": "^3.0",
+        "nonprofitcrm/blog": "^0.1",
         "nonprofitcrm/donations": "^0.1",
         "nonprofitcrm/events": "^0.1",
         "nonprofitcrm/logo-garden": "^0.1",

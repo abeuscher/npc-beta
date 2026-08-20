@@ -1,0 +1,15 @@
+{
+    "name": "nonprofitcrm/blog",
+    "description": "Blog vertical plugin — PostController with the two blog_prefix routes, the BlogListing and BlogPager widgets, and the Post admin resource over the core Page model (posts are Page rows of type 'post'; the plugin owns no schema).",
+    "type": "library",
+    "license": "MIT",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Blog\\": ""
+        }
+    }
+}

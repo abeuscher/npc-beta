@@ -40,7 +40,7 @@ it('PageController does not initialise or pass a $widgetAssets local', function 
 });
 
 it('PostController does not initialise or pass a $widgetAssets local', function () {
-    $src = file_get_contents(base_path('plugins/Blog/Http/Controllers/PostController.php'));
+    $src = file_get_contents(base_path('vendor/nonprofitcrm/blog/Http/Controllers/PostController.php'));
     expect($src)->not->toContain('widgetAssets')
         ->and($src)->not->toContain('collectAssets');
 });
