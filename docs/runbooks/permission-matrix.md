@@ -288,7 +288,7 @@ Controllers in `app/Http/Controllers/Admin/` are registered under the admin pane
 | **MailChimpWebhookController** | webhook signature (no auth) | Public webhook, signature-verified. Out of audit scope (public endpoint). |
 | **StripeWebhookController** | webhook signature (no auth) | Same; out of scope. |
 
-**Portal controllers** (`plugins/MemberPortal/Http/Controllers/*` — the MemberPortal plugin, session 394) are gated by `portal.auth` middleware + per-route `verified:portal.verification.notice`. Portal-user-scoping is out of scope for this session per the C3 entry.
+**Portal controllers** (`vendor/nonprofitcrm/member-portal/Http/Controllers/*` — the MemberPortal plugin, extracted session 395) are gated by `portal.auth` middleware + per-route `verified:portal.verification.notice`. Portal-user-scoping is out of scope for this session per the C3 entry.
 
 **Public controllers** (top-level `app/Http/Controllers/*` — Page, Post, Event, Donation, Form, Product, etc.) — no permission gate; they serve unauthenticated traffic. Out of scope (not admin surfaces).
 

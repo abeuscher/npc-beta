@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "21e02d0502503df6e6232dfc8b7ec2f2",
+    "content-hash": "cf4ebdd0806a80a62b69bb2cc4a00e50",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4514,11 +4514,17 @@
         },
         {
             "name": "nonprofitcrm/member-portal",
-            "version": "0.1.0",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/abeuscher/crm-plugin--member-portal.git",
+                "reference": "612c0fb9c5082dd609866b3bb623b2f1b505d178"
+            },
             "dist": {
-                "type": "path",
-                "url": "plugins/MemberPortal",
-                "reference": "23f4461da675e759f67319764d2ac78bd4b47b0f"
+                "type": "zip",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--member-portal/zipball/612c0fb9c5082dd609866b3bb623b2f1b505d178",
+                "reference": "612c0fb9c5082dd609866b3bb623b2f1b505d178",
+                "shasum": ""
             },
             "require": {
                 "php": "^8.2"
@@ -4533,9 +4539,11 @@
                 "MIT"
             ],
             "description": "Member Portal vertical plugin — the portal auth stack (guard, account provider, password broker, portal.auth middleware alias), the six auth/account controllers with all 17 portal routes, and the six portal widgets.",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/abeuscher/crm-plugin--member-portal/tree/v0.1.0",
+                "issues": "https://github.com/abeuscher/crm-plugin--member-portal/issues"
+            },
+            "time": "2026-08-20T17:36:16+00:00"
         },
         {
             "name": "nonprofitcrm/memberships",

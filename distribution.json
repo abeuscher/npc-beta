@@ -52,8 +52,8 @@
             "package": "nonprofitcrm/member-portal",
             "constraint": "^0.1",
             "source": {
-                "type": "path",
-                "path": "plugins/MemberPortal"
+                "type": "vcs",
+                "url": "https://github.com/abeuscher/crm-plugin--member-portal.git"
             }
         }
     ]

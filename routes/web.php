@@ -64,8 +64,9 @@ Route::get('/demo/enter', DemoLoginController::class)
     ->middleware('throttle:10,1');
 
 // ── Portal auth routes ────────────────────────────────────────────────────────
-// Registered by the MemberPortal plugin (plugins/MemberPortal/routes/web.php,
-// session 394) — names, URIs, and middleware unchanged. Plugin route files
+// Registered by the MemberPortal plugin (vendor/nonprofitcrm/member-portal/
+// routes/web.php, session 394; extracted 395) — names, URIs, and middleware
+// unchanged. Plugin route files
 // load at provider boot(), before this file, so the portal GET routes stay
 // ahead of the page-slug catch-all below.
 // ─────────────────────────────────────────────────────────────────────────────

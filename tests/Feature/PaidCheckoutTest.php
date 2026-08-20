@@ -163,8 +163,8 @@ it('paid event redirects from free register route', function () {
 
 // ── Free membership signup ────────────────────────────────────────────────────
 // (The two free-signup tests moved to the MemberPortal plugin suite at the
-// session-394 carve — their subject, Portal\SignupController, moved with it:
-// plugins/MemberPortal/tests/Feature/PortalSignupTest.php.)
+// session-394 carve — their subject, the plugin's SignupController, moved with
+// it: vendor/nonprofitcrm/member-portal/tests/Feature/PortalSignupTest.php.)
 
 // ── Portal event checkout ───────────────────────────────────────────────────
 

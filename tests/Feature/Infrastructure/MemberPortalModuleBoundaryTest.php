@@ -6,8 +6,9 @@ uses(TestCase::class);
 
 /**
  * Member Portal module boundary guard (session 394, Plugin Architecture arc
- * D5). The portal vertical lives in plugins/MemberPortal/ (carved; package +
- * extraction are the block's later phases); the boundary is one-directional —
+ * D5). The portal vertical lives in its own repository
+ * (crm-plugin--member-portal, extracted session 395), consumed as
+ * vendor/nonprofitcrm/member-portal; the boundary is one-directional —
  * the plugin reaching core (PortalAccount, Contact, the page renderer, the
  * capability API, core mailables) is the allowed hard dependency, but nothing
  * in app/ may reference the plugin namespace, with ZERO allowlist. Core

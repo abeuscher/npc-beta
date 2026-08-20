@@ -5,8 +5,8 @@
     "license": "MIT",
     "repositories": [
         {
-            "type": "path",
-            "url": "plugins/MemberPortal"
+            "type": "vcs",
+            "url": "https://github.com/abeuscher/crm-plugin--member-portal.git"
         },
         {
             "type": "vcs",

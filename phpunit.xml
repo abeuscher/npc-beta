@@ -21,7 +21,7 @@
             <directory>vendor/nonprofitcrm/memberships/tests</directory>
         </testsuite>
         <testsuite name="MemberPortal">
-            <directory>plugins/MemberPortal/tests</directory>
+            <directory>vendor/nonprofitcrm/member-portal/tests</directory>
         </testsuite>
     </testsuites>
     <source>
