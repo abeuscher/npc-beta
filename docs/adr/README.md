@@ -19,6 +19,7 @@ An ADR records what was decided and why *at the time*; the contract records what
 | [0004](0004-one-repository-per-plugin.md) | One repository per plugin | 2026-08-19 |
 | [0005](0005-two-layer-activation-without-auto-discovery.md) | Two-layer activation without auto-discovery | 2026-08-18 |
 | [0006](0006-cross-plugin-communication-through-core-events.md) | Cross-plugin communication through core-owned events | 2026-08-18 |
+| [0007](0007-shared-front-end-dependencies-are-core-owned.md) | Shared front-end dependencies are core-owned | 2026-08-20 |
 
 ## Format
 
