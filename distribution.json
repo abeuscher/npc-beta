@@ -64,6 +64,13 @@
                 "type": "vcs",
                 "url": "https://github.com/abeuscher/crm-plugin--blog.git"
             }
+        },
+        {
+            "provider": "Plugins\\Forms\\FormsServiceProvider",
+            "source": {
+                "type": "folder",
+                "path": "plugins/Forms"
+            }
         }
     ]
 }

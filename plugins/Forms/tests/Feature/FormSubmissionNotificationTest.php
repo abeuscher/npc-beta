@@ -1,6 +1,6 @@
 <?php
 
-use App\Mail\FormSubmissionMailable;
+use Plugins\Forms\Mail\FormSubmissionMailable;
 use App\Models\EmailTemplate;
 use App\Models\Form;
 use App\Models\FormSubmission;

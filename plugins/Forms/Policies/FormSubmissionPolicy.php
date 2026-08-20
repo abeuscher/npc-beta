@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Policies;
+namespace Plugins\Forms\Policies;
 
 use App\Models\FormSubmission;
 use App\Models\User;

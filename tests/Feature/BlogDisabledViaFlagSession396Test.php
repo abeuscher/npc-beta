@@ -11,9 +11,9 @@ uses(BlogDisabledViaFlagTestCase::class, RefreshDatabase::class);
 // (contract surface 1). The installed superset stays intact; only the
 // subtraction differs.
 
-it('keeps all seven lines in config(plugins) — the installed superset is untouched', function () {
+it('keeps all eight lines in config(plugins) — the installed superset is untouched', function () {
     expect(config('plugins'))->toContain(\Plugins\Blog\BlogServiceProvider::class)
-        ->and(config('plugins'))->toHaveCount(7)
+        ->and(config('plugins'))->toHaveCount(8)
         ->and(config('plugin-activation.disabled'))->toBe(['blog']);
 });
 

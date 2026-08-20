@@ -3,7 +3,6 @@
 namespace App\Widgets\QuickActions;
 
 use App\Filament\Resources\ContactResource;
-use App\Filament\Resources\FormResource;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
 use App\WidgetPrimitive\Source;
@@ -69,7 +68,7 @@ class QuickActionsDefinition extends WidgetDefinition
      * Closed-set registry of admin shortcut actions. Every URL comes from an
      * internal Filament Resource::getUrl() call or a fixed panel route name —
      * no user-supplied URLs, no string concatenation that could produce
-     * off-site destinations. The events and post entries resolve by route name
+     * off-site destinations. The events, post, and form entries resolve by route name
      * (core cannot name an extracted plugin's resource class) and yield null
      * when the owning plugin is absent; the template skips null-URL entries.
      *
@@ -81,7 +80,7 @@ class QuickActionsDefinition extends WidgetDefinition
             'new_contact' => ['label' => 'New Contact', 'url' => fn () => ContactResource::getUrl('create'), 'icon' => 'heroicon-o-user-plus'],
             'new_event'   => ['label' => 'New Event',   'url' => fn (): ?string => Route::has('filament.admin.resources.events.create') ? route('filament.admin.resources.events.create') : null, 'icon' => 'heroicon-o-calendar-days'],
             'new_post'    => ['label' => 'New Post',    'url' => fn (): ?string => Route::has('filament.admin.resources.posts.create') ? route('filament.admin.resources.posts.create') : null, 'icon' => 'heroicon-o-document-text'],
-            'new_form'    => ['label' => 'New Form',    'url' => fn () => FormResource::getUrl('create'),    'icon' => 'heroicon-o-clipboard-document-list'],
+            'new_form'    => ['label' => 'New Form',    'url' => fn (): ?string => Route::has('filament.admin.resources.forms.create') ? route('filament.admin.resources.forms.create') : null, 'icon' => 'heroicon-o-clipboard-document-list'],
         ];
     }
 }

@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Plugins\Forms\Http\Controllers;
 
-use App\Mail\PortalFormCollision;
+use App\Http\Controllers\Controller;
+use Plugins\Forms\Mail\PortalFormCollision;
 use App\Models\Contact;
 use App\Models\Form;
 use App\Models\FormSubmission;
@@ -86,7 +87,7 @@ class FormSubmissionController extends Controller
                 'ip_address' => $request->ip(),
                 'created_at' => now(),
             ]);
-        } catch (\App\Exceptions\FormNotificationDeliveryException) {
+        } catch (\Plugins\Forms\Exceptions\FormNotificationDeliveryException) {
             return $this->errorResponse($request, 'Your message could not be sent due to a server error. Please try again later.');
         }
 

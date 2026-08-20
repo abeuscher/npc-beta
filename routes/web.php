@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\SitemapController;
-use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\DocsController;
 use App\Http\Controllers\ProductCheckoutController;
@@ -48,10 +47,8 @@ Route::post('/products/waitlist', [ProductWaitlistController::class, 'store'])
     ->name('products.waitlist')
     ->middleware('throttle:10,1');
 
-// Web form submissions
-Route::post('/forms/{handle}', [FormSubmissionController::class, 'store'])
-    ->name('forms.submit')
-    ->middleware('throttle:10,1');
+// The web form submission route (forms.submit) is registered by the
+// Forms plugin (plugins/Forms/routes/web.php).
 
 // Form-less demo auto-login — demo server only (guarded inside the controller
 // on the same signal isDemoMode() keys on; inert/404 elsewhere). Per-IP

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\FormResource\RelationManagers;
+namespace Plugins\Forms\Filament\Resources\FormResource\RelationManagers;
 
 use App\Filament\Resources\ContactResource;
 use Filament\Forms\Form;

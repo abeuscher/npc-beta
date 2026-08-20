@@ -25,6 +25,13 @@ class PageContext
 
     public function form(string $handle): ?Form
     {
+        // Composition safety (session 397): the forms table is plugin-owned —
+        // a forms-absent composition has no table, so the lookup gates on the
+        // route-presence signal and resolves null.
+        if (! \Illuminate\Support\Facades\Route::has('forms.submit')) {
+            return null;
+        }
+
         if (! array_key_exists($handle, $this->formCache)) {
             $this->formCache[$handle] = Form::where('handle', $handle)
                 ->where('is_active', true)

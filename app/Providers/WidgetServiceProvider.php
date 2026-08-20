@@ -34,7 +34,6 @@ use App\Widgets\SocialSharing\SocialSharingDefinition;
 use App\Widgets\Table\TableDefinition;
 use App\Widgets\TextBlock\TextBlockDefinition;
 use App\Widgets\VideoEmbed\VideoEmbedDefinition;
-use App\Widgets\WebForm\WebFormDefinition;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -66,7 +65,6 @@ class WidgetServiceProvider extends ServiceProvider
 
         $registry->register(new TextBlockDefinition());
         $registry->register(new ButtonRowDefinition());
-        $registry->register(new WebFormDefinition());
         $registry->register(new ProductDisplayDefinition());
         $registry->register(new ProductCarouselDefinition());
         $registry->register(new ImageDefinition());

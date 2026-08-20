@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace Plugins\Forms\Filament\Resources;
 
-use App\Filament\Resources\FormResource\Pages;
-use App\Filament\Resources\FormResource\RelationManagers\FormSubmissionsRelationManager;
+use Plugins\Forms\Filament\Resources\FormResource\Pages;
+use Plugins\Forms\Filament\Resources\FormResource\RelationManagers\FormSubmissionsRelationManager;
 use App\Models\CustomFieldDef;
 use App\Models\Form;
 use Filament\Forms;

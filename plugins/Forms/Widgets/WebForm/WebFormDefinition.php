@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Widgets\WebForm;
+namespace Plugins\Forms\Widgets\WebForm;
 
 use App\Widgets\Contracts\WidgetDefinition;
 
@@ -52,5 +52,10 @@ class WebFormDefinition extends WidgetDefinition
         return [
             'form_handle' => 'newsletter-signup',
         ];
+    }
+
+    public function template(): string
+    {
+        return "@include('plugin-forms-widgets::WebForm.template')";
     }
 }

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\FormResource\Pages;
+namespace Plugins\Forms\Filament\Resources\FormResource\Pages;
 
-use App\Filament\Resources\FormResource;
+use Plugins\Forms\Filament\Resources\FormResource;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateForm extends CreateRecord

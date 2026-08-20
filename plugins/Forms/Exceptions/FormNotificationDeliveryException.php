@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exceptions;
+namespace Plugins\Forms\Exceptions;
 
 use RuntimeException;
 

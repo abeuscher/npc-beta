@@ -419,7 +419,6 @@ class AdminPanelProvider extends PanelProvider
                         'notes'             => \App\Filament\Resources\NoteResource::class,
                         'recordDetailViews' => \App\Filament\Resources\RecordDetailViewResource::class,
                         'pages'             => \App\Filament\Resources\PageResource::class,
-                        'forms'             => \App\Filament\Resources\FormResource::class,
                         'templates'         => \App\Filament\Resources\TemplateResource::class,
                         'widgetManager'     => \App\Filament\Resources\WidgetTypeResource::class,
                     ];
@@ -432,11 +431,11 @@ class AdminPanelProvider extends PanelProvider
                         }
                     }
 
-                    // The events, donations, and memberships resources live
-                    // in their plugins, which core cannot name — resolve by
-                    // route name + the same permission each policy's viewAny
-                    // checks. Absent plugin = no entry (the tour step falls
-                    // back to a popover).
+                    // The events, donations, memberships, and forms resources
+                    // live in their plugins, which core cannot name — resolve
+                    // by route name + the same permission each policy's
+                    // viewAny checks. Absent plugin = no entry (the tour step
+                    // falls back to a popover).
                     try {
                         if (\Illuminate\Support\Facades\Route::has('filament.admin.resources.events.index')
                             && (auth()->user()?->can('view_any_event') ?? false)) {
@@ -457,6 +456,14 @@ class AdminPanelProvider extends PanelProvider
                         if (\Illuminate\Support\Facades\Route::has('filament.admin.resources.memberships.index')
                             && (auth()->user()?->can('view_any_membership') ?? false)) {
                             $urls['memberships'] = route('filament.admin.resources.memberships.index');
+                        }
+                    } catch (\Throwable) {
+                    }
+
+                    try {
+                        if (\Illuminate\Support\Facades\Route::has('filament.admin.resources.forms.index')
+                            && (auth()->user()?->can('view_any_form') ?? false)) {
+                            $urls['forms'] = route('filament.admin.resources.forms.index');
                         }
                     } catch (\Throwable) {
                     }

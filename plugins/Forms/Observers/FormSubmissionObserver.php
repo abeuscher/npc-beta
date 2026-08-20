@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Observers;
+namespace Plugins\Forms\Observers;
 
-use App\Exceptions\FormNotificationDeliveryException;
-use App\Mail\FormSubmissionMailable;
+use Plugins\Forms\Exceptions\FormNotificationDeliveryException;
+use Plugins\Forms\Mail\FormSubmissionMailable;
 use App\Models\FormSubmission;
 use App\Models\SiteSetting;
 use Illuminate\Support\Facades\Mail;

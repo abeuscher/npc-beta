@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
-use App\Observers\FormSubmissionObserver;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[ObservedBy(FormSubmissionObserver::class)]
+// The submission observer is registered by the Forms plugin's provider
+// (FormSubmission::observe() at boot — contract surface 1's inversion of the
+// former #[ObservedBy] attribute; a core-model reference to a plugin class
+// would be a banned core→plugin reach).
 class FormSubmission extends Model
 {
     use HasFactory, SoftDeletes;
