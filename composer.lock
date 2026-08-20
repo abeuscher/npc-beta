@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "db34ae7e99bf4697800f53c7e3f8c221",
+    "content-hash": "ec019d6ccf5d7ec11e0c2d60e5846204",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4511,6 +4511,31 @@
                 "issues": "https://github.com/abeuscher/crm-plugin--events/issues"
             },
             "time": "2026-08-20T20:44:32+00:00"
+        },
+        {
+            "name": "nonprofitcrm/forms",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/Forms",
+                "reference": "0019d85434ecd99e510b14371493ce22e67d2fbe"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Plugins\\Forms\\": ""
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Forms vertical plugin — the public form-submission endpoint (forms.submit) with the member-portal collision seam, the WebForm widget and its <x-public-form> Blade component, the Form admin resource with the submissions relation manager, the submission notification observer and mailables, both form email-template handles, and the plugin-owned forms + form_submissions schema.",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "nonprofitcrm/logo-garden",

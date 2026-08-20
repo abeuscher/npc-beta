@@ -54,6 +54,11 @@ class FormsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Plugin-owned schema (contract surface 5): the two form tables left
+        // core's dump at the D7 squash-boundary redraw. Install order is
+        // core dump → enabled plugins' migrations → seeders.
+        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+
         View::addNamespace('plugin-forms-widgets', __DIR__ . '/Widgets');
 
         // The first plugin-owned Blade component (contract 0.21.0):

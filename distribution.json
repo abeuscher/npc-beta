@@ -67,8 +67,10 @@
         },
         {
             "provider": "Plugins\\Forms\\FormsServiceProvider",
+            "package": "nonprofitcrm/forms",
+            "constraint": "^0.1",
             "source": {
-                "type": "folder",
+                "type": "path",
                 "path": "plugins/Forms"
             }
         }

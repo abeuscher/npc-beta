@@ -1,0 +1,15 @@
+{
+    "name": "nonprofitcrm/forms",
+    "description": "Forms vertical plugin — the public form-submission endpoint (forms.submit) with the member-portal collision seam, the WebForm widget and its <x-public-form> Blade component, the Form admin resource with the submissions relation manager, the submission notification observer and mailables, both form email-template handles, and the plugin-owned forms + form_submissions schema.",
+    "type": "library",
+    "license": "MIT",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Forms\\": ""
+        }
+    }
+}
