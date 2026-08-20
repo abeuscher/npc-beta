@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d9e42f7c35f5d2b4f8d298d0d1e5988d",
+    "content-hash": "21e02d0502503df6e6232dfc8b7ec2f2",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4511,6 +4511,31 @@
                 "issues": "https://github.com/abeuscher/crm-plugin--logo-garden/issues"
             },
             "time": "2026-08-19T09:26:34+00:00"
+        },
+        {
+            "name": "nonprofitcrm/member-portal",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/MemberPortal",
+                "reference": "23f4461da675e759f67319764d2ac78bd4b47b0f"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Plugins\\MemberPortal\\": ""
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Member Portal vertical plugin — the portal auth stack (guard, account provider, password broker, portal.auth middleware alias), the six auth/account controllers with all 17 portal routes, and the six portal widgets.",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "nonprofitcrm/memberships",

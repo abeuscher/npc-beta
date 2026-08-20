@@ -1,0 +1,15 @@
+{
+    "name": "nonprofitcrm/member-portal",
+    "description": "Member Portal vertical plugin — the portal auth stack (guard, account provider, password broker, portal.auth middleware alias), the six auth/account controllers with all 17 portal routes, and the six portal widgets.",
+    "type": "library",
+    "license": "MIT",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\MemberPortal\\": ""
+        }
+    }
+}

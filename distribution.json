@@ -49,8 +49,10 @@
         },
         {
             "provider": "Plugins\\MemberPortal\\MemberPortalServiceProvider",
+            "package": "nonprofitcrm/member-portal",
+            "constraint": "^0.1",
             "source": {
-                "type": "folder",
+                "type": "path",
                 "path": "plugins/MemberPortal"
             }
         }

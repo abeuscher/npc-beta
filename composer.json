@@ -5,6 +5,10 @@
     "license": "MIT",
     "repositories": [
         {
+            "type": "path",
+            "url": "plugins/MemberPortal"
+        },
+        {
             "type": "vcs",
             "url": "https://github.com/abeuscher/crm-plugin--memberships.git"
         },
@@ -39,6 +43,7 @@
         "nonprofitcrm/donations": "^0.1",
         "nonprofitcrm/events": "^0.1",
         "nonprofitcrm/logo-garden": "^0.1",
+        "nonprofitcrm/member-portal": "^0.1",
         "nonprofitcrm/memberships": "^0.1",
         "nonprofitcrm/payments": "^0.3",
         "predis/predis": "^2.2",

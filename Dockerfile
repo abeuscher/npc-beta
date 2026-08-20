@@ -13,9 +13,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 # Install PHP dependencies (only needed for Tailwind content scanning).
-# Every plugin package is VCS-resolved — composer install fetches them from
-# GitHub; no plugin source or manifest COPYs are needed.
+# Extracted plugin packages are VCS-resolved — composer install fetches them
+# from GitHub. Path-repo plugin manifests are copied before install so the
+# path repositories resolve (one COPY line per packaged plugin — never a glob).
 COPY composer.json composer.lock ./
+COPY plugins/MemberPortal/composer.json plugins/MemberPortal/
 RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev --ignore-platform-reqs
 
 # Install Node dependencies
@@ -109,9 +111,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # Copy only the dependency manifests first so composer install is cached
-# independently of application code changes. Every plugin package is
-# VCS-resolved from GitHub, so no plugin manifest COPYs are needed here.
+# independently of application code changes. Extracted plugin packages are
+# VCS-resolved from GitHub; path-repo plugin manifests are copied here so
+# their path repositories resolve (one COPY line per packaged plugin).
 COPY composer.json composer.lock ./
+COPY plugins/MemberPortal/composer.json plugins/MemberPortal/
 
 # Install PHP dependencies — dev packages included for public-dev builds
 RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
