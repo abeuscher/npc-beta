@@ -43,8 +43,8 @@
             "package": "nonprofitcrm/memberships",
             "constraint": "^0.1",
             "source": {
-                "type": "path",
-                "path": "plugins/Memberships"
+                "type": "vcs",
+                "url": "https://github.com/abeuscher/crm-plugin--memberships.git"
             }
         }
     ]

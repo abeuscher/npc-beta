@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b7aed097c61079dce79ca4c2296bc0d9",
+    "content-hash": "d9e42f7c35f5d2b4f8d298d0d1e5988d",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4514,11 +4514,17 @@
         },
         {
             "name": "nonprofitcrm/memberships",
-            "version": "0.1.0",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/abeuscher/crm-plugin--memberships.git",
+                "reference": "2750e74a31d98faaf62af5596c3b1fe68eb83067"
+            },
             "dist": {
-                "type": "path",
-                "url": "plugins/Memberships",
-                "reference": "0870c6375241c5886ac80ed519fb3a2e13433ec1"
+                "type": "zip",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--memberships/zipball/2750e74a31d98faaf62af5596c3b1fe68eb83067",
+                "reference": "2750e74a31d98faaf62af5596c3b1fe68eb83067",
+                "shasum": ""
             },
             "require": {
                 "php": "^8.2"
@@ -4533,9 +4539,11 @@
                 "MIT"
             ],
             "description": "Memberships vertical plugin — membership checkout, tiers, member admin resources, importer, and the MembershipStatus and PricingChart widgets.",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/abeuscher/crm-plugin--memberships/tree/v0.1.0",
+                "issues": "https://github.com/abeuscher/crm-plugin--memberships/issues"
+            },
+            "time": "2026-08-20T05:17:02+00:00"
         },
         {
             "name": "nonprofitcrm/payments",

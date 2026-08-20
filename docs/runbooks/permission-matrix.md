@@ -114,9 +114,9 @@ Columns appear in this order in every per-surface table: `super_admin → develo
 |---|---|---|---|---|---|---|---|---|---|---|
 | **ContactResource** | [`canAccess: view_any_contact`](../../app/Filament/Resources/ContactResource.php#L22) | allow* | allow | allow | view | allow | deny | deny | view | redirect |
 | **OrganizationResource** | [`view_any_organization`](../../app/Filament/Resources/OrganizationResource.php#L19) | allow* | allow | allow | deny | deny | deny | deny | deny | redirect |
-| **MembershipResource** | [`view_any_membership`](../../plugins/Memberships/Filament/Resources/MembershipResource.php#L17) | allow* | allow | allow | deny | deny | deny | deny | deny | redirect |
-| **MembershipTierResource** | [`manage_membership_tiers`](../../plugins/Memberships/Filament/Resources/MembershipTierResource.php#L26) | allow* | allow | deny | deny | deny | deny | deny | deny | redirect |
-| **MemberResource** | [`canViewAny: view_any_member`](../../plugins/Memberships/Filament/Resources/MemberResource.php#L33) (Contact model, ContactPolicy gates CRUD) | allow* | view | view | view | view | deny | deny | view | redirect |
+| **MembershipResource** | [`view_any_membership`](../../vendor/nonprofitcrm/memberships/Filament/Resources/MembershipResource.php#L17) | allow* | allow | allow | deny | deny | deny | deny | deny | redirect |
+| **MembershipTierResource** | [`manage_membership_tiers`](../../vendor/nonprofitcrm/memberships/Filament/Resources/MembershipTierResource.php#L26) | allow* | allow | deny | deny | deny | deny | deny | deny | redirect |
+| **MemberResource** | [`canViewAny: view_any_member`](../../vendor/nonprofitcrm/memberships/Filament/Resources/MemberResource.php#L33) (Contact model, ContactPolicy gates CRUD) | allow* | view | view | view | view | deny | deny | view | redirect |
 | **NoteResource** | [`view_any_note`](../../app/Filament/Resources/NoteResource.php#L17) (NotePolicy adds `notes_edit_only_by_creator` toggle on update/delete) | allow* | allow | allow | deny | allow | deny | deny | deny | redirect |
 | **TagResource** | [`view_any_tag`](../../app/Filament/Resources/TagResource.php#L16) | allow* | allow | allow | deny | allow | allow | deny | deny | redirect |
 | **CustomFieldDefResource** | [`canViewAny: manage_custom_fields`](../../app/Filament/Resources/CustomFieldDefResource.php#L26) | allow* | allow | deny | deny | deny | deny | deny | deny | redirect |

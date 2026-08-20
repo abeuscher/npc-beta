@@ -6,8 +6,8 @@ uses(TestCase::class);
 
 /**
  * Memberships module boundary guard (session 392, Plugin Architecture arc D4).
- * The Memberships vertical lives in plugins/Memberships/ (the D4 carve; its
- * package + extraction are this block's later phases); the boundary is
+ * The Memberships vertical lives in its own repository (crm-plugin--memberships,
+ * extracted session 393, resolving into vendor/nonprofitcrm/memberships/); the boundary is
  * one-directional — the plugin reaching core (models, Transaction, the
  * capability API, the import wizard concerns) is the allowed hard dependency,
  * but nothing in app/ may reference the plugin namespace, with ZERO
