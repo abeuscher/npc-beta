@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ec019d6ccf5d7ec11e0c2d60e5846204",
+    "content-hash": "f6c1ffd7b781a1c8c05cc812350db57f",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4514,11 +4514,17 @@
         },
         {
             "name": "nonprofitcrm/forms",
-            "version": "0.1.0",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/abeuscher/crm-plugin--forms.git",
+                "reference": "67f49d504f50d0461c4221afa4afdffa9e171a79"
+            },
             "dist": {
-                "type": "path",
-                "url": "plugins/Forms",
-                "reference": "0019d85434ecd99e510b14371493ce22e67d2fbe"
+                "type": "zip",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--forms/zipball/67f49d504f50d0461c4221afa4afdffa9e171a79",
+                "reference": "67f49d504f50d0461c4221afa4afdffa9e171a79",
+                "shasum": ""
             },
             "require": {
                 "php": "^8.2"
@@ -4533,9 +4539,11 @@
                 "MIT"
             ],
             "description": "Forms vertical plugin — the public form-submission endpoint (forms.submit) with the member-portal collision seam, the WebForm widget and its <x-public-form> Blade component, the Form admin resource with the submissions relation manager, the submission notification observer and mailables, both form email-template handles, and the plugin-owned forms + form_submissions schema.",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/abeuscher/crm-plugin--forms/tree/v0.1.0",
+                "issues": "https://github.com/abeuscher/crm-plugin--forms/issues"
+            },
+            "time": "2026-08-20T23:35:04+00:00"
         },
         {
             "name": "nonprofitcrm/logo-garden",

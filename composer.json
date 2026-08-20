@@ -5,8 +5,8 @@
     "license": "MIT",
     "repositories": [
         {
-            "type": "path",
-            "url": "plugins/Forms"
+            "type": "vcs",
+            "url": "https://github.com/abeuscher/crm-plugin--forms.git"
         },
         {
             "type": "vcs",

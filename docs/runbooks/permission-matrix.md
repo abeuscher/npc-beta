@@ -139,7 +139,7 @@ Columns appear in this order in every per-surface table: `super_admin → develo
 | **NavigationMenuResource** | [`view_any_navigation_menu`](../../app/Filament/Resources/NavigationMenuResource.php#L17) | allow* | allow | deny | deny | deny | allow | allow | deny | redirect |
 | **CollectionResource** | [`view_any_collection`](../../app/Filament/Resources/CollectionResource.php#L36) | allow* | allow | deny | deny | deny | view (collection) + allow (items) | allow | deny | redirect |
 | **ContentCollectionResource** | [`view_any_collection`](../../app/Filament/Resources/ContentCollectionResource.php#L13) (filtered view of Collection) | allow* | allow | deny | deny | deny | view (collection) + allow (items) | allow | deny | redirect |
-| **FormResource** | [`view_any_form`](../../app/Filament/Resources/FormResource.php#L20) | allow* | allow | deny | deny | deny | deny | deny | deny | redirect |
+| **FormResource** | [`view_any_form`](../../vendor/nonprofitcrm/forms/Filament/Resources/FormResource.php#L20) | allow* | allow | deny | deny | deny | deny | deny | deny | redirect |
 | **TemplateResource** | [`canViewAny: view_any_page OR edit_theme_scss`](../../app/Filament/Resources/TemplateResource.php#L25) (canEdit broader: `update_page OR edit_theme_scss OR edit_site_chrome`) | allow* | allow | deny | deny | deny | view (no update_page → cannot edit) | allow | deny | redirect |
 | **EventResource** | [`view_any_event`](../../app/Filament/Resources/EventResource.php#L26) (canDelete blocks if registrations exist) | allow* | view | deny | allow | view | deny | deny | deny | redirect |
 

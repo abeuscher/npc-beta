@@ -6,7 +6,9 @@ uses(TestCase::class);
 
 /**
  * Forms module boundary guard (session 397, Plugin Architecture arc D7). The
- * forms vertical lives in plugins/Forms/; the boundary is one-directional —
+ * forms vertical lives in its own repository (crm-plugin--forms, extracted
+ * session 397), consumed as vendor/nonprofitcrm/forms; the boundary is
+ * one-directional —
  * the plugin reaching core (Form, FormSubmission, Contact, Note, PiiScanner,
  * EmailTemplate, the capability registry) is the allowed hard dependency,
  * but nothing in app/ may reference the plugin namespace, with ZERO

@@ -48,7 +48,7 @@ Route::post('/products/waitlist', [ProductWaitlistController::class, 'store'])
     ->middleware('throttle:10,1');
 
 // The web form submission route (forms.submit) is registered by the
-// Forms plugin (plugins/Forms/routes/web.php).
+// Forms plugin (vendor/nonprofitcrm/forms/routes/web.php).
 
 // Form-less demo auto-login — demo server only (guarded inside the controller
 // on the same signal isDemoMode() keys on; inert/404 elsewhere). Per-IP
