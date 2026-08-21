@@ -22,7 +22,7 @@ const SHOTS = path.resolve(process.cwd(), 'test-results/chrome-parity');
 // The editor's chrome *styles* (as opposed to its wrapper structure) ship in
 // the build-server widget bundle, which the isolated e2e stack deliberately
 // does NOT build — no build server in CI, by recorded design (see
-// widget-color-tokens.spec.ts). The structural wrapper assertions below are
+// docs/testing/playwright-discipline.md). The structural wrapper assertions below are
 // what guard the session-354 drift class and run everywhere; the computed-
 // style assertions only prove anything where the bundle exists (local dev),
 // so they are gated on it.

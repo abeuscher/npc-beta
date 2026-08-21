@@ -16,7 +16,7 @@ test.describe.configure({ mode: 'serial' });
 // decode it. Real dimensions matter: the widget's rendered box must come from
 // the image's natural size, because the aspect-ratio/box CSS classes live in
 // the widget bundle, which the isolated e2e stack deliberately does not build
-// (no build server in CI — see widget-color-tokens.spec.ts). A 1×1 image
+// (no build server in CI — see docs/testing/playwright-discipline.md). A 1×1 image
 // collapses the preview region to ~1px there, and overlay clicks get
 // intercepted by the neighbouring region or the sticky admin topbar. ──
 

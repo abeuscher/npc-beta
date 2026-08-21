@@ -12,7 +12,7 @@ const FIXTURE_CSV = path.resolve(__dirname, '../fixtures/donations/happy-path.cs
 
 test.describe.configure({ mode: 'serial' });
 
-test.describe('Donations importer — Map Columns row indicator', () => {
+test.describe('Importer Map Columns — the Choices.js mapping select (donations wizard as host)', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
     });

@@ -15,12 +15,23 @@
 // Its static counterpart is tests/Feature/PublicAlpineCspGuardTest.php, which
 // needs no browser and therefore runs everywhere.
 //
-// BUNDLE DEPENDENCY: every widget component now lives in the public widget
-// bundle (public/build/widgets/), which the isolated e2e stack deliberately
-// does not build — there is no build server in CI, by recorded design (see the
-// same note in widget-color-tokens.spec.ts). These tests skip themselves when
-// the bundle is absent rather than reporting a failure that is really an
-// environment gap. On a dev box that has run `build:public` they run in full.
+// BUNDLE DEPENDENCY, and what survives it. Widget *components* live in the
+// public widget bundle (public/build/widgets/), which the isolated e2e stack
+// deliberately does not build — no build server in CI, by recorded design. But
+// Alpine itself, and the theme store, ship in the Vite public bundle, which the
+// e2e image does build. So the two halves of this spec are gated differently:
+//
+//   • The console sweep and the theme store need only Alpine, and run
+//     everywhere. Without the widget bundle the pages do throw — every template
+//     naming a bundle-registered component fails to resolve it — so those
+//     specific errors are filtered and everything else is still asserted. The
+//     EvalError this spec exists to catch is NOT of that shape, so CI keeps the
+//     coverage that matters.
+//   • The four widget-component tests drive components the bundle registers.
+//     Without it there is nothing to drive, so they still skip.
+//
+// Before this split every test here skipped in CI and the spec asserted nothing
+// outside a dev box.
 
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
@@ -40,12 +51,32 @@ function collectConsole(page: Page): Collected[] {
     return entries;
 }
 
-/** The widget bundle carries every registered component; without it, skip. */
-async function requireWidgetBundle(page: Page): Promise<void> {
-    const present = await page.evaluate(() => typeof (window as any).NPWidgets === 'object');
-
-    test.skip(!present, 'public widget bundle not built in this environment (no build server in CI)');
+/** The widget bundle carries every registered widget component. */
+async function widgetBundlePresent(page: Page): Promise<boolean> {
+    return page.evaluate(() => typeof (window as any).NPWidgets === 'object');
 }
+
+/** For assertions that drive a bundle-registered component: no bundle, no test. */
+async function requireWidgetBundle(page: Page): Promise<void> {
+    test.skip(
+        !(await widgetBundlePresent(page)),
+        'public widget bundle not built in this environment (no build server in CI)',
+    );
+}
+
+// Without the widget bundle, every template that names a bundle-registered
+// component (x-data="nav") fails to resolve it: Alpine reports an expression
+// error and the browser a ReferenceError. That is the absent bundle talking,
+// not a defect on the page. Everything else still counts — including the
+// CSP EvalError this spec was written for, which does not look like an
+// undefined identifier.
+const BUNDLE_ABSENCE = /\b[A-Za-z_$][\w$]* is not defined\b/;
+
+function unexplained(entries: Collected[], bundlePresent: boolean): Collected[] {
+    return bundlePresent ? entries : entries.filter((e) => !BUNDLE_ABSENCE.test(e.text));
+}
+
+const format = (entries: Collected[]) => entries.map((e) => `[${e.kind}] ${e.text}`).join('\n');
 
 const PUBLIC_PAGES = ['/', '/about', '/contact', '/pricing', '/privacy-policy', '/terms-of-use'];
 
@@ -57,10 +88,11 @@ test.describe('Public pages emit no console errors under the enforced CSP', () =
             const response = await page.goto(path, { waitUntil: 'networkidle' });
             test.skip(response !== null && response.status() === 404, `${path} does not exist in this environment`);
 
-            await requireWidgetBundle(page);
+            const bundlePresent = await widgetBundlePresent(page);
             await page.waitForTimeout(500);
 
-            expect(entries, entries.map((e) => `[${e.kind}] ${e.text}`).join('\n')).toEqual([]);
+            const errors = unexplained(entries, bundlePresent);
+            expect(errors, format(errors)).toEqual([]);
         });
     }
 });
@@ -69,7 +101,12 @@ test.describe('Alpine components initialize and respond under the CSP-safe build
     test('the theme store is registered and toggles', async ({ page }) => {
         const entries = collectConsole(page);
         await page.goto('/', { waitUntil: 'networkidle' });
-        await requireWidgetBundle(page);
+
+        // The theme store is registered by the Vite public bundle, which the
+        // e2e image builds — so unlike the widget-component tests below, this
+        // one runs everywhere. That matters: it is the assertion that proves
+        // Alpine started at all.
+        const bundlePresent = await widgetBundlePresent(page);
 
         // A registered store proves Alpine started — the exact thing EvalError
         // prevented in production.
@@ -79,7 +116,9 @@ test.describe('Alpine components initialize and respond under the CSP-safe build
 
         expect(after).not.toBe(before);
         expect(['light', 'dark']).toContain(after);
-        expect(entries).toEqual([]);
+
+        const errors = unexplained(entries, bundlePresent);
+        expect(errors, format(errors)).toEqual([]);
     });
 
     test('nav dropdowns open on keyboard and close on escape', async ({ page }) => {
