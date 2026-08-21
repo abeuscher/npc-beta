@@ -33,6 +33,6 @@ Costs:
 
 ## References
 
-- `docs/plugin-contract.md` surface 5 (migrations) — current authority, including the identity-check procedure.
-- `sessions/plugin-architecture-plan.md` § 6 dispositions 1 and 7.
+- `docs/plugin-contract.md` — the migrations surface is the current authority, including the procedure for checking that a moved table is the same table.
+- `sessions/plugin-architecture-plan.md` — the settled question of how a plugin extends a contact (through its own tables keyed by contact, never by adding columns to core tables), and the open question of how plugin-owned tables come out of core's squashed schema.
 - Commits `4942967d` (first boundary redraw, 2026-08-18), `449adb9e` (second redraw, four tables, 2026-08-19).

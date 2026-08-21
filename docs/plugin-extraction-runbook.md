@@ -134,6 +134,17 @@ Normative rule 5's target posture is that plugin-subject tests ship with the plu
 
 Either way, per-plugin CI in the extracted repo (the tests boot the full Laravel app, so core becomes a dev dependency — non-trivial plumbing) remains the standing follow-up (arc D11).
 
+**Browser tests are a third posture, and they are sorted here rather than afterwards.** The decision and its costs are in `docs/adr/0008-browser-tests-travel-with-the-plugin.md`; the step is:
+
+1. List the browser specs under `tests/e2e/` that touch the vertical being extracted.
+2. Sort each by **which repository's change would break its assertion.** Breaks only if the plugin changes → it travels, into the plugin repo's own `tests/e2e/`. Would still have to pass with the plugin uninstalled → it is core's and stays, whatever entity it borrows as a fixture. Could break from either side → it is an integration spec and stays in core. Expect most to stay: a spec that drives a core wizard with the vertical's data is testing the wizard.
+3. A spec that travels takes its fixture files with it — a fixture belongs to whoever owns the spec that reads it. Shared helpers (sign-in, database reset, wizard drivers) stay core-owned; the travelling spec imports them through the `#e2e/` subpath rather than a relative path up the vendor tree.
+4. Nothing else changes: `playwright.config.ts` already collects from `vendor/{vendor}/{package}/tests/e2e` alongside core's own directory, and prints which packages it collected from at the start of the run.
+
+Note the authoring constraint this creates, and say so to whoever writes the spec: an extracted repo has no running site, so it cannot execute its own browser specs. Write the spec against a local core checkout with the plugin installed, watch it pass there, and only then move it into the plugin repo. Core's build is otherwise the first thing that ever runs it.
+
+> *Worked example (Test Audit Cycle 3):* the first sort of the existing suite moved **nothing** — all 26 specs proved core-owned (the import wizard, chrome, theme, page engine and admin panel are core; the plugin verticals appeared only as fixtures). The Forms carve is the first extraction expected to produce a travelling spec.
+
 > *Worked example (385/387):* `PluginPilotSession377Test`, `LogoGardenContractRetrofitTest`, `LogoGardenWidgetTest`, and Payments' subject tests stay core.
 >
 > *Worked example (388):* the `Events` testsuite (29 files) re-pointed to `vendor/nonprofitcrm/events/tests` — 236 tests, identical counts from the vendor path.

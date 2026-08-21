@@ -60,6 +60,54 @@ All four were found in real specs that had been committed without ever running (
 
 ---
 
+## Where a spec lives once its vertical is a plugin
+
+A plugin owns the browser specs for the behaviour it ships, and the assembled
+application is the only thing that runs them. The reasoning, the alternatives
+and the costs are in
+`docs/adr/0008-browser-tests-travel-with-the-plugin.md`; this is the operating
+procedure.
+
+**Deciding the owner.** Ask which repository's change would break the
+assertion.
+
+- Breaks only if the **plugin** changes → the plugin owns it. It lives in the
+  plugin repository under `tests/e2e/` and travels with the package.
+- Would still have to pass with that **plugin uninstalled** → core owns it,
+  whatever entity it borrows as a fixture. Most specs that *look* plugin-owned
+  are this: a spec that drives the importer wizard with a donations CSV is
+  testing the wizard, not donations, and the CSV is scenery.
+- Could break from **either side** → it is an integration spec and stays in
+  core, where the composition lives.
+
+**How they get run.** `playwright.config.ts` collects from core's `tests/e2e/`
+and from `vendor/nonprofitcrm/*/tests/e2e/` in one pass, and prints which
+plugin packages it collected from before the run starts. Read that line: a
+distribution that omits a plugin omits its specs without failing, so a green
+run means "everything installed passed", not "everything passed".
+
+**Importing the shared helpers.** Signing in, resetting the database, driving
+the import wizard and the sample CSV files stay core-owned, and a plugin's
+specs reach them through the `#e2e/` subpath rather than counting steps back
+up the vendor tree:
+
+```ts
+import { resetAndLogin } from '#e2e/helpers/auth.js';
+```
+
+That makes these helpers a published surface, not private scaffolding —
+changing one changes every plugin that imports it, and the breakage only
+appears when core's build runs the installed packages' specs. Treat a change
+to them the way you would treat any other contract change.
+
+**Authoring, honestly.** A plugin repository can store browser specs and
+cannot run them — it has no site to point a browser at. So the local-first
+rule below cannot be honoured from inside a plugin repository, and core's
+build is the first thing that ever runs such a spec. Until that changes, the
+safest sequence is to write the spec against a local core checkout with the
+plugin installed, watch it pass there, and only then move it into the plugin
+repository.
+
 ## Artifact hygiene
 
 `resetDatabase()` fires once per spec in `beforeAll`; rows a test creates after that persist into the next run. Delete out-of-band rows in `afterAll` (standalone layouts, test-only pages, ad-hoc records). Rows that are the natural output of the feature under test (contacts imported by a happy-path spec) may stay. See `tests/e2e/README.md`.

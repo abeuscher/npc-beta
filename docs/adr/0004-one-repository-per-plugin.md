@@ -34,7 +34,7 @@ Costs:
 
 ## References
 
-- `sessions/plugin-architecture-plan.md` § Stage D (the topology decisions) — canonical.
-- `docs/plugin-contract.md` § External repo — current authority on the extracted shape.
+- `sessions/plugin-architecture-plan.md` — the full-decomposition stage, where the repository-topology options were weighed and settled; canonical.
+- `docs/plugin-contract.md` — the external-repository section is the current authority on the extracted shape.
 - `docs/plugin-extraction-runbook.md` — the procedure, with worked examples.
 - Commits `2d2ad9d2` (first extraction + runbook, 2026-08-19), `085052c9`, `869ef80d` (second and third extractions), `7d2dc087` (the first cross-repo release pair).

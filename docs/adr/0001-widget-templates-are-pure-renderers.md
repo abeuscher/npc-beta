@@ -32,6 +32,6 @@ Costs, equally real:
 
 ## References
 
-- `docs/plugin-contract.md` surface 2 (widget contribution) — current authority.
+- `docs/plugin-contract.md` — the widget-contribution surface is the current authority on how a plugin adds widgets.
 - `sessions/tracks/widget-primitive-premise.md` — the founding premise.
 - Commits `4ccc70d7` (pilot extraction, 2026-08-18), `03be2918` (the all-41 retrofit + standing guard, 2026-08-18).

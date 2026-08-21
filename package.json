@@ -1,6 +1,9 @@
 {
     "private": true,
     "type": "module",
+    "imports": {
+        "#e2e/*": "./tests/e2e/*"
+    },
     "scripts": {
         "dev": "vite",
         "build": "vite build",
