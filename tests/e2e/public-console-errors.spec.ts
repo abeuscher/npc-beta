@@ -65,12 +65,14 @@ async function requireWidgetBundle(page: Page): Promise<void> {
 }
 
 // Without the widget bundle, every template that names a bundle-registered
-// component (x-data="nav") fails to resolve it: Alpine reports an expression
-// error and the browser a ReferenceError. That is the absent bundle talking,
-// not a defect on the page. Everything else still counts — including the
-// CSP EvalError this spec was written for, which does not look like an
-// undefined identifier.
-const BUNDLE_ABSENCE = /\b[A-Za-z_$][\w$]* is not defined\b/;
+// component (x-data="nav") fails to resolve it. Both wordings have to be
+// matched, because the two surfaces run different Alpine builds: the public
+// site runs the CSP-safe build, which says `Undefined variable: nav`, while
+// the standard build behind the admin panel says `nav is not defined`. That is
+// the absent bundle talking, not a defect on the page. Everything else still
+// counts — including the CSP EvalError this spec was written for, which
+// resembles neither.
+const BUNDLE_ABSENCE = /\b[A-Za-z_$][\w$]* is not defined\b|\bUndefined variable: [A-Za-z_$][\w$]*/;
 
 function unexplained(entries: Collected[], bundlePresent: boolean): Collected[] {
     return bundlePresent ? entries : entries.filter((e) => !BUNDLE_ABSENCE.test(e.text));
@@ -78,7 +80,14 @@ function unexplained(entries: Collected[], bundlePresent: boolean): Collected[] 
 
 const format = (entries: Collected[]) => entries.map((e) => `[${e.kind}] ${e.text}`).join('\n');
 
-const PUBLIC_PAGES = ['/', '/about', '/contact', '/pricing', '/privacy-policy', '/terms-of-use'];
+// Only pages the base seeder actually creates. `/pricing`, `/privacy-policy`
+// and `/terms-of-use` were listed here from the start and have never existed in
+// this environment — each one hit the 404 guard below and reported green
+// without asserting anything, which is indistinguishable from passing. The
+// seeder also creates `/events` and the blog index; adding them would be
+// net-new coverage rather than an audit reduction, so they are left for a
+// deliberate pass.
+const PUBLIC_PAGES = ['/', '/about', '/contact'];
 
 test.describe('Public pages emit no console errors under the enforced CSP', () => {
     for (const path of PUBLIC_PAGES) {
