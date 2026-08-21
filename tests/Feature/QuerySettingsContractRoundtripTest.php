@@ -12,7 +12,7 @@ use Plugins\Blog\Widgets\BlogListing\BlogListingDefinition;
 use App\Widgets\BoardMembers\BoardMembersDefinition;
 use App\Widgets\Carousel\CarouselDefinition;
 use Plugins\Events\Widgets\EventsListing\EventsListingDefinition;
-use App\Widgets\ProductCarousel\ProductCarouselDefinition;
+use Plugins\Products\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Models\Product;
 use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;

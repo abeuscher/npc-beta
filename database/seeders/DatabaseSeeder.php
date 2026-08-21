@@ -229,23 +229,30 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        Collection::firstOrCreate(
-            ['handle' => 'products'],
-            [
-                'name'        => 'Products',
-                'description' => 'System collection — backed by the Product model.',
-                'source_type' => 'products',
-                'fields'      => [
-                    ['key' => 'name',        'label' => 'Name',        'type' => 'text',     'required' => true,  'helpText' => '', 'options' => []],
-                    ['key' => 'slug',        'label' => 'Slug',        'type' => 'text',     'required' => true,  'helpText' => '', 'options' => []],
-                    ['key' => 'description', 'label' => 'Description', 'type' => 'textarea', 'required' => false, 'helpText' => '', 'options' => []],
-                    ['key' => 'capacity',    'label' => 'Capacity',    'type' => 'number',   'required' => true,  'helpText' => '', 'options' => []],
-                    ['key' => 'available',   'label' => 'Available',   'type' => 'number',   'required' => false, 'helpText' => 'Remaining capacity.', 'options' => []],
-                ],
-                'is_public'   => true,
-                'is_active'   => true,
-            ]
-        );
+        // Composition safety (session 398): the products system collection is
+        // backed by the plugin-owned products table — a products-absent
+        // composition seeds no row for it (the FormSeeder route-presence
+        // gate pattern; resolution against the row degrades via the gated
+        // product resolver arms either way).
+        if (\Illuminate\Support\Facades\Route::has('products.checkout')) {
+            Collection::firstOrCreate(
+                ['handle' => 'products'],
+                [
+                    'name'        => 'Products',
+                    'description' => 'System collection — backed by the Product model.',
+                    'source_type' => 'products',
+                    'fields'      => [
+                        ['key' => 'name',        'label' => 'Name',        'type' => 'text',     'required' => true,  'helpText' => '', 'options' => []],
+                        ['key' => 'slug',        'label' => 'Slug',        'type' => 'text',     'required' => true,  'helpText' => '', 'options' => []],
+                        ['key' => 'description', 'label' => 'Description', 'type' => 'textarea', 'required' => false, 'helpText' => '', 'options' => []],
+                        ['key' => 'capacity',    'label' => 'Capacity',    'type' => 'number',   'required' => true,  'helpText' => '', 'options' => []],
+                        ['key' => 'available',   'label' => 'Available',   'type' => 'number',   'required' => false, 'helpText' => 'Remaining capacity.', 'options' => []],
+                    ],
+                    'is_public'   => true,
+                    'is_active'   => true,
+                ]
+            );
+        }
 
         Collection::firstOrCreate(
             ['handle' => 'events'],

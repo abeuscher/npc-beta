@@ -9,36 +9,9 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 // ── Capacity enforcement ──────────────────────────────────────────────────────
-
-it('blocks checkout when product is at capacity', function () {
-    $product = Product::factory()->create(['capacity' => 2]);
-    $price   = ProductPrice::factory()->create([
-        'product_id'     => $product->id,
-        'amount'         => 50.00,
-        'stripe_price_id' => null,
-    ]);
-
-    // Fill capacity
-    Purchase::factory()->create([
-        'product_id'       => $product->id,
-        'product_price_id' => $price->id,
-        'status'           => 'active',
-    ]);
-    Purchase::factory()->create([
-        'product_id'       => $product->id,
-        'product_price_id' => $price->id,
-        'status'           => 'active',
-    ]);
-
-    config(['services.stripe.secret' => 'sk_test_fake']);
-
-    $response = $this->post(route('products.checkout'), [
-        'product_price_id' => $price->id,
-    ]);
-
-    $response->assertRedirect();
-    $response->assertSessionHasErrors('checkout');
-});
+// The blocks-checkout-at-capacity test moved to the Products plugin's suite at
+// the session-398 carve (its subject is the plugin's checkout controller);
+// the pure model capacity tests below stay core with the models (§ 6.7).
 
 it('allows checkout when product has remaining capacity', function () {
     $product = Product::factory()->create(['capacity' => 5]);

@@ -11,9 +11,9 @@ uses(FormsDisabledViaFlagTestCase::class, RefreshDatabase::class);
 // (contract surface 1). The installed superset stays intact; only the
 // subtraction differs.
 
-it('keeps all eight lines in config(plugins) — the installed superset is untouched', function () {
+it('keeps all nine lines in config(plugins) — the installed superset is untouched', function () {
     expect(config('plugins'))->toContain(\Plugins\Forms\FormsServiceProvider::class)
-        ->and(config('plugins'))->toHaveCount(8)
+        ->and(config('plugins'))->toHaveCount(9)
         ->and(config('plugin-activation.disabled'))->toBe(['forms']);
 });
 

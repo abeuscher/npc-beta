@@ -526,6 +526,15 @@ final class ContractResolver
      */
     private function resolveProduct(DataContract $contract, array &$cache): array
     {
+        // Composition safety (contract surface 5 core-model caveat, session
+        // 398): the products table is plugin-owned schema — on a
+        // products-absent install the read must degrade to an empty list,
+        // not error. Route presence is the established plugin-presence
+        // signal (the membership-tier arm precedent).
+        if (! \Illuminate\Support\Facades\Route::has('products.checkout')) {
+            return ['items' => []];
+        }
+
         $key = 'product:list:' . sha1(serialize($contract->filters));
         if (! array_key_exists($key, $cache)) {
             $query = Product::where('status', 'published')
@@ -560,6 +569,12 @@ final class ContractResolver
     {
         $slug = (string) ($contract->filters['slug'] ?? '');
         if ($slug === '') {
+            return ['item' => null];
+        }
+
+        // Composition safety (session 398): plugin-owned table — degrade to
+        // null on a products-absent composition (the list-arm gate's twin).
+        if (! \Illuminate\Support\Facades\Route::has('products.checkout')) {
             return ['item' => null];
         }
 

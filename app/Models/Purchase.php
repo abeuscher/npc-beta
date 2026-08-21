@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use App\Observers\PurchaseObserver;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[ObservedBy(PurchaseObserver::class)]
+// The PurchaseObserver is registered by the Products plugin's provider —
+// an #[ObservedBy] attribute here would be a core→plugin reach (the
+// observer inversion, session 398; the FormSubmission precedent).
 class Purchase extends Model
 {
     use HasFactory, HasUuids;

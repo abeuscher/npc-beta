@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f6c1ffd7b781a1c8c05cc812350db57f",
+    "content-hash": "7d1e370ee657173f6027e2d6d3e91dc7",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4646,16 +4646,16 @@
         },
         {
             "name": "nonprofitcrm/payments",
-            "version": "v0.3.0",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/abeuscher/crm-plugin--payments.git",
-                "reference": "c4c9a0dedf181152553128a98feef287380b394a"
+                "reference": "f53a46033fb03d264444b5e449ede35182074572"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/abeuscher/crm-plugin--payments/zipball/c4c9a0dedf181152553128a98feef287380b394a",
-                "reference": "c4c9a0dedf181152553128a98feef287380b394a",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--payments/zipball/f53a46033fb03d264444b5e449ede35182074572",
+                "reference": "f53a46033fb03d264444b5e449ede35182074572",
                 "shasum": ""
             },
             "require": {
@@ -4673,10 +4673,43 @@
             ],
             "description": "Payments foundation plugin — Stripe rails: checkout-session creation, webhook handling, payment-mode detection, product price sync, and the payments capability.",
             "support": {
-                "source": "https://github.com/abeuscher/crm-plugin--payments/tree/v0.3.0",
+                "source": "https://github.com/abeuscher/crm-plugin--payments/tree/v0.4.0",
                 "issues": "https://github.com/abeuscher/crm-plugin--payments/issues"
             },
-            "time": "2026-08-20T02:48:21+00:00"
+            "time": "2026-08-21T02:04:51+00:00"
+        },
+        {
+            "name": "nonprofitcrm/products",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/abeuscher/crm-plugin--products.git",
+                "reference": "b8570b050a4e51811c91d091368c4ac761d413d7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--products/zipball/b8570b050a4e51811c91d091368c4ac761d413d7",
+                "reference": "b8570b050a4e51811c91d091368c4ac761d413d7",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Plugins\\Products\\": ""
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Products vertical plugin — the product checkout and waitlist endpoints (products.checkout, products.waitlist) consuming the payments capability, the ProductDisplay and ProductCarousel widgets, the Product admin resource with both relation managers, both product observers, the product policy, the CheckoutSettled purchase-fulfillment listener, and the plugin-owned products + product_prices + purchases + waitlist_entries schema.",
+            "support": {
+                "source": "https://github.com/abeuscher/crm-plugin--products/tree/v0.1.0",
+                "issues": "https://github.com/abeuscher/crm-plugin--products/issues"
+            },
+            "time": "2026-08-21T02:41:13+00:00"
         },
         {
             "name": "nunomaduro/termwind",

@@ -107,7 +107,7 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Donations (list) | `vendor/nonprofitcrm/donations/Filament/Resources/DonationResource.php` |
 | Transactions (list) | `TransactionResource.php` |
 | Giving Summary | `vendor/nonprofitcrm/donations/Filament/Pages/DonorsPage.php` |
-| Products (list) | `ProductResource.php` |
+| Products (list) | `vendor/nonprofitcrm/products/Filament/Resources/ProductResource.php` |
 | Funds & Grants (list) | `vendor/nonprofitcrm/donations/Filament/Resources/FundResource.php` |
 | Campaigns (list) | `CampaignResource.php` |
 | Finance Settings | `Filament/Pages/Settings/FinanceSettingsPage.php` |
@@ -159,12 +159,12 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Member portal signup | `Plugins\MemberPortal\Http\Controllers\SignupController` |
 | Member portal account dashboard | `Plugins\MemberPortal\Http\Controllers\AccountController` |
 | Event registration (POST) | `Plugins\Events\Http\Controllers\EventController::register` |
-| Product checkout (POST) | `ProductCheckoutController::store` |
+| Product checkout (POST) | `Plugins\Products\Http\Controllers\ProductCheckoutController::store` |
 | Donation checkout (POST) | `Plugins\Donations\Http\Controllers\DonationCheckoutController::store` |
 | Web form submission (POST) | `Plugins\Forms\Http\Controllers\FormSubmissionController::store` |
 | Portal event registration (POST) | `Plugins\Events\Http\Controllers\Portal\EventRegistrationController::store` |
 | Membership checkout (POST) | `Plugins\Memberships\Http\Controllers\MembershipCheckoutController::store` |
-| Product waitlist (POST) | `ProductWaitlistController::store` |
+| Product waitlist (POST) | `Plugins\Products\Http\Controllers\ProductWaitlistController::store` |
 | Events API (JSON) (`/api/events.json`) | closure in `vendor/nonprofitcrm/events/routes/web.php` (the extracted Events plugin, session 388) |
 | Sitemap (`/sitemap.xml`) | `SitemapController::index` |
 | Robots (`/robots.txt`) | `RobotsController::index` |

@@ -159,7 +159,7 @@ Columns appear in this order in every per-surface table: `super_admin → develo
 | **TransactionResource** | [`view_any_transaction`](../../app/Filament/Resources/TransactionResource.php#L26) (canEdit/canDelete add `!stripe_id` constraint) | allow* | view | deny | deny | deny | deny | deny | allow | redirect |
 | **FundResource** | [`view_any_fund`](../../app/Filament/Resources/FundResource.php#L20) (canDelete: no donations attached) | allow* | view | deny | deny | deny | deny | deny | allow | redirect |
 | **CampaignResource** | [`view_any_campaign`](../../app/Filament/Resources/CampaignResource.php#L16) | allow* | view | deny | deny | deny | deny | deny | allow | redirect |
-| **ProductResource** | [`view_any_product`](../../app/Filament/Resources/ProductResource.php#L19) (canDelete: no purchases attached) | allow* | allow | deny | deny | deny | allow | deny | deny | redirect |
+| **ProductResource** | [`view_any_product`](../../vendor/nonprofitcrm/products/Filament/Resources/ProductResource.php#L19) (canDelete: no purchases attached) | allow* | allow | deny | deny | deny | allow | deny | deny | redirect |
 
 **Per-resource notes (Finance group):**
 

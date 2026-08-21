@@ -268,6 +268,10 @@ class TransactionResource extends Resource
 
                 Tables\Filters\SelectFilter::make('product_id')
                     ->label('Product')
+                    // Composition safety (session 398): the products table is
+                    // plugin-owned — the filter vanishes on a products-absent
+                    // composition instead of crashing on the options read.
+                    ->visible(fn () => \Illuminate\Support\Facades\Route::has('products.checkout'))
                     ->options(fn () => Product::orderBy('name')->pluck('name', 'id'))
                     ->query(fn ($query, array $data) => isset($data['value']) && $data['value']
                         ? $query
