@@ -1,6 +1,8 @@
 ## form_submissions
 
-Immutable records of individual web form submissions.
+**Owned by the Forms plugin (`nonprofitcrm/forms`, extracted to `crm-plugin--forms` session 397)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
+Immutable records of individual web form submissions. The `FormSubmission` model stays core (plan § 6.7).
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|

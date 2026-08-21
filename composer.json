@@ -6,6 +6,10 @@
     "repositories": [
         {
             "type": "vcs",
+            "url": "https://github.com/abeuscher/crm-plugin--forms.git"
+        },
+        {
+            "type": "vcs",
             "url": "https://github.com/abeuscher/crm-plugin--blog.git"
         },
         {
@@ -47,6 +51,7 @@
         "nonprofitcrm/blog": "^0.1",
         "nonprofitcrm/donations": "^0.1",
         "nonprofitcrm/events": "^0.1",
+        "nonprofitcrm/forms": "^0.1",
         "nonprofitcrm/logo-garden": "^0.1",
         "nonprofitcrm/member-portal": "^0.1",
         "nonprofitcrm/memberships": "^0.1",

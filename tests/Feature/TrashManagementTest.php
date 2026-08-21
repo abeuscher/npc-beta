@@ -3,7 +3,7 @@
 use App\Filament\Resources\CampaignResource;
 use App\Filament\Resources\CollectionResource;
 use App\Filament\Resources\ContactResource;
-use App\Filament\Resources\FormResource;
+use Plugins\Forms\Filament\Resources\FormResource;
 use Plugins\Memberships\Filament\Resources\MembershipResource;
 use App\Filament\Resources\NoteResource;
 use App\Filament\Resources\OrganizationResource;

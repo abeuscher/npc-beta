@@ -1,6 +1,8 @@
 ## forms
 
-Web form definitions. Fields and settings stored as JSON.
+**Owned by the Forms plugin (`nonprofitcrm/forms`, extracted to `crm-plugin--forms` session 397)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
+Web form definitions. Fields and settings stored as JSON. The `Form` model stays core (plan § 6.7).
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|

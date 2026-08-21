@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict g37IfAz2cGfmjZoK9d77VhCq0zT3hkeqmoaaOCyumHdWIqzfow44pjK0tJNXSZy
+\restrict Fwkaay9a1xcN0o4pJPFg6wvG8POvgu7xtlbZe7DdVXei7GYua04vCtyqCIUBsoM
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -334,78 +334,6 @@ CREATE SEQUENCE public.failed_jobs_id_seq
 --
 
 ALTER SEQUENCE public.failed_jobs_id_seq OWNED BY public.failed_jobs.id;
-
-
---
--- Name: form_submissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.form_submissions (
-    id bigint NOT NULL,
-    form_id bigint NOT NULL,
-    data json DEFAULT '{}'::json NOT NULL,
-    ip_address character varying(255),
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    contact_id uuid,
-    deleted_at timestamp(0) without time zone
-);
-
-
---
--- Name: form_submissions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.form_submissions_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: form_submissions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.form_submissions_id_seq OWNED BY public.form_submissions.id;
-
-
---
--- Name: forms; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.forms (
-    id bigint NOT NULL,
-    title character varying(255) NOT NULL,
-    handle character varying(255) NOT NULL,
-    description text,
-    fields json DEFAULT '[]'::json NOT NULL,
-    settings json DEFAULT '{}'::json NOT NULL,
-    is_active boolean DEFAULT true NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    deleted_at timestamp(0) without time zone,
-    is_archived boolean DEFAULT false NOT NULL
-);
-
-
---
--- Name: forms_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.forms_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: forms_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.forms_id_seq OWNED BY public.forms.id;
 
 
 --
@@ -1437,20 +1365,6 @@ ALTER TABLE ONLY public.failed_jobs ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- Name: form_submissions id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.form_submissions ALTER COLUMN id SET DEFAULT nextval('public.form_submissions_id_seq'::regclass);
-
-
---
--- Name: forms id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.forms ALTER COLUMN id SET DEFAULT nextval('public.forms_id_seq'::regclass);
-
-
---
 -- Name: help_article_routes id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1685,30 +1599,6 @@ ALTER TABLE ONLY public.failed_jobs
 
 ALTER TABLE ONLY public.failed_jobs
     ADD CONSTRAINT failed_jobs_uuid_unique UNIQUE (uuid);
-
-
---
--- Name: form_submissions form_submissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.form_submissions
-    ADD CONSTRAINT form_submissions_pkey PRIMARY KEY (id);
-
-
---
--- Name: forms forms_handle_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.forms
-    ADD CONSTRAINT forms_handle_unique UNIQUE (handle);
-
-
---
--- Name: forms forms_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.forms
-    ADD CONSTRAINT forms_pkey PRIMARY KEY (id);
 
 
 --
@@ -2270,20 +2160,6 @@ CREATE INDEX contacts_import_session_id_index ON public.contacts USING btree (im
 
 
 --
--- Name: form_submissions_contact_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX form_submissions_contact_id_index ON public.form_submissions USING btree (contact_id);
-
-
---
--- Name: form_submissions_form_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX form_submissions_form_id_index ON public.form_submissions USING btree (form_id);
-
-
---
 -- Name: help_article_routes_help_article_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2709,22 +2585,6 @@ ALTER TABLE ONLY public.dashboard_views
 
 
 --
--- Name: form_submissions form_submissions_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.form_submissions
-    ADD CONSTRAINT form_submissions_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
-
-
---
--- Name: form_submissions form_submissions_form_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.form_submissions
-    ADD CONSTRAINT form_submissions_form_id_foreign FOREIGN KEY (form_id) REFERENCES public.forms(id) ON DELETE CASCADE;
-
-
---
 -- Name: help_article_routes help_article_routes_help_article_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3056,13 +2916,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict g37IfAz2cGfmjZoK9d77VhCq0zT3hkeqmoaaOCyumHdWIqzfow44pjK0tJNXSZy
+\unrestrict Fwkaay9a1xcN0o4pJPFg6wvG8POvgu7xtlbZe7DdVXei7GYua04vCtyqCIUBsoM
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict ejYLq6MUmiE6SnJKbaMOf5jLWzqafYU8My5NgpaxkLorwMhQiz3WYAOs7AJux52
+\restrict BoDgKDhPzIVsTt6z6OkGMTFAVgQ4grXxQPHiqzvwkstHVa8bfemycxZExXqM1rr
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3212,5 +3072,5 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 114, true);
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ejYLq6MUmiE6SnJKbaMOf5jLWzqafYU8My5NgpaxkLorwMhQiz3WYAOs7AJux52
+\unrestrict BoDgKDhPzIVsTt6z6OkGMTFAVgQ4grXxQPHiqzvwkstHVa8bfemycxZExXqM1rr
 

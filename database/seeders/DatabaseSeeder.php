@@ -28,7 +28,13 @@ class DatabaseSeeder extends Seeder
 
         $this->call(PermissionSeeder::class);
         $this->call(WidgetTypeSeeder::class);
-        $this->call(FormSeeder::class);
+        // Composition safety (session 397, contract surface 5): the forms
+        // table is plugin-owned — gate the call on route presence (the
+        // membership tier-seeder precedent). A forms-absent composition seeds
+        // no form rows and touches no forms table.
+        if (\Illuminate\Support\Facades\Route::has('forms.submit')) {
+            $this->call(FormSeeder::class);
+        }
         $this->call(SampleImageLibrarySeeder::class);
         $this->call(ImportSourceSeeder::class);
 
@@ -139,16 +145,6 @@ class DatabaseSeeder extends Seeder
                 'handle'  => 'portal_password_reset',
                 'subject' => 'Reset your password',
                 'body'    => '<p>Hi {{first_name}},</p><p>Click the link below to reset your password. This link expires in 60 minutes.</p><p><a href="{{reset_url}}">Reset password</a></p><p>If you did not request a password reset, you can safely ignore this email.</p>',
-            ],
-            [
-                'handle'  => 'portal_form_collision',
-                'subject' => 'Someone submitted a form using your email address',
-                'body'    => '<p>Hi {{first_name}},</p><p>A form on our website was submitted using your email address. If this was you, please <a href="{{login_url}}">log in to your account</a> and complete the action while signed in.</p><p>If this was not you, no action is needed — the submission was not processed.</p>',
-            ],
-            [
-                'handle'  => 'form_submission',
-                'subject' => 'New submission: {{form_title}}',
-                'body'    => '<p>A new submission was received from the <strong>{{form_title}}</strong> form.</p>{{submission}}',
             ],
         ];
 

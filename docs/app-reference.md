@@ -93,7 +93,7 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Navigation (list) | `NavigationMenuResource.php` |
 | Collections (list — custom collections) | `CollectionResource.php` |
 | Collection Manager (list — content collections) | `ContentCollectionResource.php` |
-| Forms (list) | `FormResource.php` |
+| Forms (list) | `vendor/nonprofitcrm/forms/Filament/Resources/FormResource.php` |
 | Templates (list) | `TemplateResource.php` |
 | Edit Content Template | `TemplateResource/Pages/EditContentTemplate.php` |
 | Edit Page Template | `TemplateResource/Pages/EditPageTemplate.php` |
@@ -161,7 +161,7 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Event registration (POST) | `Plugins\Events\Http\Controllers\EventController::register` |
 | Product checkout (POST) | `ProductCheckoutController::store` |
 | Donation checkout (POST) | `Plugins\Donations\Http\Controllers\DonationCheckoutController::store` |
-| Web form submission (POST) | `FormSubmissionController::store` |
+| Web form submission (POST) | `Plugins\Forms\Http\Controllers\FormSubmissionController::store` |
 | Portal event registration (POST) | `Plugins\Events\Http\Controllers\Portal\EventRegistrationController::store` |
 | Membership checkout (POST) | `Plugins\Memberships\Http\Controllers\MembershipCheckoutController::store` |
 | Product waitlist (POST) | `ProductWaitlistController::store` |

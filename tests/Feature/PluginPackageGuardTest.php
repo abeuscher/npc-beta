@@ -126,6 +126,8 @@ it('keeps plugin-owned tables out of the core schema dump', function () {
         'memberships'         => 'vendor/nonprofitcrm/memberships',
         'portal_accounts'     => 'vendor/nonprofitcrm/member-portal',
         'portal_password_reset_tokens' => 'vendor/nonprofitcrm/member-portal',
+        'forms'               => 'vendor/nonprofitcrm/forms',
+        'form_submissions'    => 'vendor/nonprofitcrm/forms',
     ];
 
     foreach ($pluginTables as $table => $owner) {

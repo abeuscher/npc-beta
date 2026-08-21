@@ -48,6 +48,13 @@ class PageBuilderDataSources
 
     private static function forms(): array
     {
+        // Composition safety (session 397): the forms table is plugin-owned —
+        // on a forms-absent composition the read would crash, so the admin
+        // picker degrades to an empty list on the route-presence signal.
+        if (! \Illuminate\Support\Facades\Route::has('forms.submit')) {
+            return [];
+        }
+
         return Form::where('is_active', true)
             ->orderBy('title')
             ->get(['handle', 'title'])

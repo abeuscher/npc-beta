@@ -64,6 +64,15 @@
                 "type": "vcs",
                 "url": "https://github.com/abeuscher/crm-plugin--blog.git"
             }
+        },
+        {
+            "provider": "Plugins\\Forms\\FormsServiceProvider",
+            "package": "nonprofitcrm/forms",
+            "constraint": "^0.1",
+            "source": {
+                "type": "vcs",
+                "url": "https://github.com/abeuscher/crm-plugin--forms.git"
+            }
         }
     ]
 }

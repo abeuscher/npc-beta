@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "db34ae7e99bf4697800f53c7e3f8c221",
+    "content-hash": "f6c1ffd7b781a1c8c05cc812350db57f",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4511,6 +4511,39 @@
                 "issues": "https://github.com/abeuscher/crm-plugin--events/issues"
             },
             "time": "2026-08-20T20:44:32+00:00"
+        },
+        {
+            "name": "nonprofitcrm/forms",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/abeuscher/crm-plugin--forms.git",
+                "reference": "67f49d504f50d0461c4221afa4afdffa9e171a79"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--forms/zipball/67f49d504f50d0461c4221afa4afdffa9e171a79",
+                "reference": "67f49d504f50d0461c4221afa4afdffa9e171a79",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Plugins\\Forms\\": ""
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Forms vertical plugin — the public form-submission endpoint (forms.submit) with the member-portal collision seam, the WebForm widget and its <x-public-form> Blade component, the Form admin resource with the submissions relation manager, the submission notification observer and mailables, both form email-template handles, and the plugin-owned forms + form_submissions schema.",
+            "support": {
+                "source": "https://github.com/abeuscher/crm-plugin--forms/tree/v0.1.0",
+                "issues": "https://github.com/abeuscher/crm-plugin--forms/issues"
+            },
+            "time": "2026-08-20T23:35:04+00:00"
         },
         {
             "name": "nonprofitcrm/logo-garden",

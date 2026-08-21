@@ -144,10 +144,6 @@ class EmailTemplate extends Model implements HasMedia
                 'body'          => '<p>Hi {{name}},</p><p>You have been invited to access the {{org_name}} admin panel. Click the link below to set your password and activate your account.</p><p><a href="{{invitation_url}}">Set your password</a></p><p>This link expires in 48 hours. If you were not expecting this invitation, you can safely ignore this email.</p>',
                 'footer_reason' => 'You received this email because someone invited you to access the admin panel.',
             ],
-            'form_submission' => [
-                'subject' => 'New submission: {{form_title}}',
-                'body'    => '<p>A new submission was received from the <strong>{{form_title}}</strong> form.</p>{{submission}}',
-            ],
         ];
 
         // Core-owned handles live in the array above; plugin-owned handles
