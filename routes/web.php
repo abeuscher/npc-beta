@@ -39,7 +39,7 @@ Route::get('/home', fn () => redirect('/', 301))->name('home.redirect');
 
 // The product checkout and waitlist routes (products.checkout,
 // products.waitlist) are registered by the Products plugin
-// (plugins/Products/routes/web.php).
+// (vendor/nonprofitcrm/products/routes/web.php).
 
 // The web form submission route (forms.submit) is registered by the
 // Forms plugin (vendor/nonprofitcrm/forms/routes/web.php).

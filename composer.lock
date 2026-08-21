@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b99c802c4a0c0d328f0634a0dffa017c",
+    "content-hash": "7d1e370ee657173f6027e2d6d3e91dc7",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4680,11 +4680,17 @@
         },
         {
             "name": "nonprofitcrm/products",
-            "version": "0.1.0",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/abeuscher/crm-plugin--products.git",
+                "reference": "b8570b050a4e51811c91d091368c4ac761d413d7"
+            },
             "dist": {
-                "type": "path",
-                "url": "plugins/Products",
-                "reference": "bc70b2967885eda90b77991777ff17eafb600c62"
+                "type": "zip",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--products/zipball/b8570b050a4e51811c91d091368c4ac761d413d7",
+                "reference": "b8570b050a4e51811c91d091368c4ac761d413d7",
+                "shasum": ""
             },
             "require": {
                 "php": "^8.2"
@@ -4699,9 +4705,11 @@
                 "MIT"
             ],
             "description": "Products vertical plugin — the product checkout and waitlist endpoints (products.checkout, products.waitlist) consuming the payments capability, the ProductDisplay and ProductCarousel widgets, the Product admin resource with both relation managers, both product observers, the product policy, the CheckoutSettled purchase-fulfillment listener, and the plugin-owned products + product_prices + purchases + waitlist_entries schema.",
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/abeuscher/crm-plugin--products/tree/v0.1.0",
+                "issues": "https://github.com/abeuscher/crm-plugin--products/issues"
+            },
+            "time": "2026-08-21T02:41:13+00:00"
         },
         {
             "name": "nunomaduro/termwind",

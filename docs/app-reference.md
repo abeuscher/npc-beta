@@ -107,7 +107,7 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Donations (list) | `vendor/nonprofitcrm/donations/Filament/Resources/DonationResource.php` |
 | Transactions (list) | `TransactionResource.php` |
 | Giving Summary | `vendor/nonprofitcrm/donations/Filament/Pages/DonorsPage.php` |
-| Products (list) | `plugins/Products/Filament/Resources/ProductResource.php` |
+| Products (list) | `vendor/nonprofitcrm/products/Filament/Resources/ProductResource.php` |
 | Funds & Grants (list) | `vendor/nonprofitcrm/donations/Filament/Resources/FundResource.php` |
 | Campaigns (list) | `CampaignResource.php` |
 | Finance Settings | `Filament/Pages/Settings/FinanceSettingsPage.php` |

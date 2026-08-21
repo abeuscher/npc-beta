@@ -131,7 +131,7 @@ it('hero widget renders with the new background_overlay_opacity key', function (
 
 it('product_carousel widget renders without background_color or text_color reads', function () {
     $html = Blade::render(
-        file_get_contents(base_path('plugins/Products/Widgets/ProductCarousel/template.blade.php')),
+        file_get_contents(base_path('vendor/nonprofitcrm/products/Widgets/ProductCarousel/template.blade.php')),
         [
             'config' => ['heading' => 'Products'],
             'configMedia' => [],

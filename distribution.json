@@ -79,8 +79,8 @@
             "package": "nonprofitcrm/products",
             "constraint": "^0.1",
             "source": {
-                "type": "path",
-                "path": "plugins/Products"
+                "type": "vcs",
+                "url": "https://github.com/abeuscher/crm-plugin--products.git"
             }
         }
     ]

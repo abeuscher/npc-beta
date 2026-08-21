@@ -97,8 +97,8 @@ function widgetScssColorHits(): array
 const WIDGET_SCSS_COLOR_BASELINE = [
     'vendor/nonprofitcrm/events/Widgets/EventsListing/styles.scss:128',  // #fff on --np-color-success fill (judgment #3); line shifted +5 by the session-333 `.content-card { min-width: 0 }` even-grid fix; key re-pointed at the session-388 Events extraction
     'app/Widgets/MapEmbed/styles.scss:34',        // #fff on rgba scrim (judgment #4)
-    'plugins/Products/Widgets/ProductCarousel/styles.scss:25', // #000000 gradient stop (scope-fenced)
-    'plugins/Products/Widgets/ProductCarousel/styles.scss:30', // #000000 gradient stop (scope-fenced)
+    'vendor/nonprofitcrm/products/Widgets/ProductCarousel/styles.scss:25', // #000000 gradient stop (scope-fenced)
+    'vendor/nonprofitcrm/products/Widgets/ProductCarousel/styles.scss:30', // #000000 gradient stop (scope-fenced)
     'app/Widgets/SocialSharing/styles.scss:62',   // #fff on rgba scrim (judgment #4)
 ];
 

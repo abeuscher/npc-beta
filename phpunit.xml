@@ -30,7 +30,7 @@
             <directory>vendor/nonprofitcrm/forms/tests</directory>
         </testsuite>
         <testsuite name="Products">
-            <directory>plugins/Products/tests</directory>
+            <directory>vendor/nonprofitcrm/products/tests</directory>
         </testsuite>
     </testsuites>
     <source>

@@ -6,8 +6,9 @@ uses(TestCase::class);
 
 /**
  * Products module boundary guard (session 398, Plugin Architecture arc D8).
- * The products vertical lives at plugins/Products/ (its extraction to
- * crm-plugin--products is this block's closer); the boundary is
+ * The products vertical lives in its own repository (crm-plugin--products,
+ * extracted session 398), consumed as vendor/nonprofitcrm/products; the
+ * boundary is
  * one-directional — the plugin reaching core (Product, ProductPrice,
  * Purchase, WaitlistEntry, Contact, Transaction, ActivityLogger, the
  * capability registry, the payments contracts) is the allowed hard

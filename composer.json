@@ -5,8 +5,8 @@
     "license": "MIT",
     "repositories": [
         {
-            "type": "path",
-            "url": "plugins/Products"
+            "type": "vcs",
+            "url": "https://github.com/abeuscher/crm-plugin--products.git"
         },
         {
             "type": "vcs",

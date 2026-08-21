@@ -13,12 +13,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 # Install PHP dependencies (only needed for Tailwind content scanning).
-# Extracted plugin packages are VCS-resolved — composer install fetches them
-# from GitHub. Path-sourced plugin manifests are copied before the install so
-# the path repository resolves (manifests-before-source, one line per plugin
-# per stage — the P6 rule).
+# Every plugin package is VCS-resolved — composer install fetches them from
+# GitHub; no plugin source or manifest COPYs are needed.
 COPY composer.json composer.lock ./
-COPY plugins/Products/composer.json plugins/Products/
 RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev --ignore-platform-reqs
 
 # Install Node dependencies
@@ -112,11 +109,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # Copy only the dependency manifests first so composer install is cached
-# independently of application code changes. Extracted plugin packages are
-# VCS-resolved from GitHub; path-sourced plugin manifests are copied here
-# (manifests-before-source, one line per plugin per stage — the P6 rule).
+# independently of application code changes. Every plugin package is
+# VCS-resolved from GitHub, so no plugin manifest COPYs are needed here.
 COPY composer.json composer.lock ./
-COPY plugins/Products/composer.json plugins/Products/
 
 # Install PHP dependencies — dev packages included for public-dev builds
 RUN if [ "$BUILD_ENV" = "public-dev" ]; then \

@@ -1,6 +1,6 @@
 ## waitlist_entries
 
-**Owned by the Products plugin (`nonprofitcrm/products`, carved session 398)** — created by the plugin's `database/migrations/`, not core's schema dump.
+**Owned by the Products plugin (`nonprofitcrm/products`, extracted to `crm-plugin--products` session 398)** — created by the plugin's `database/migrations/`, not core's schema dump.
 
 Contacts waiting for a sold-out product. Processing is manual; no automated slot-holding.
 
