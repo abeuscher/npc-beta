@@ -21,6 +21,7 @@ An ADR records what was decided and why *at the time*; the contract records what
 | [0006](0006-cross-plugin-communication-through-core-events.md) | Cross-plugin communication through core-owned events | 2026-08-18 |
 | [0007](0007-shared-front-end-dependencies-are-core-owned.md) | Shared front-end dependencies are core-owned | 2026-08-20 |
 | [0008](0008-browser-tests-travel-with-the-plugin.md) | Browser tests travel with the plugin; the assembled application runs them | 2026-08-21 |
+| [0009](0009-plugin-tests-in-three-tiers.md) | Plugin tests come in three tiers, and conformance is core's to publish | 2026-08-21 |
 
 ## Format
 

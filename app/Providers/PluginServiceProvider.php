@@ -63,10 +63,14 @@ class PluginServiceProvider extends ServiceProvider
     }
 
     /**
-     * A plugin's handle is the kebab-case of its PascalName namespace segment
-     * (the folder under plugins/): Plugins\LogoGarden\LogoGardenServiceProvider
-     * → logo-garden. Derived from the FQCN's second-to-last segment — no
-     * registry, deterministic, and it matches the composer package names.
+     * A plugin's handle is the kebab-case of its PascalName namespace segment:
+     * Plugins\PascalName\PascalNameServiceProvider → pascal-name. Derived from
+     * the FQCN's second-to-last segment — no registry, deterministic, and it
+     * matches the composer package names.
+     *
+     * Stated with a placeholder rather than a real plugin on purpose: core
+     * names no plugin, not even in prose, so the conformance kit's
+     * zero-allowlist namespace scan stays honest.
      */
     public static function handleFor(string $provider): string
     {
