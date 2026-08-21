@@ -70,8 +70,9 @@ Costs:
 
 ## References
 
-- `docs/plugin-contract.md` surface 11 (front-end assets; vendor paths and the
-  silent-skip caveat) — current authority.
+- `docs/plugin-contract.md` — the front-end-assets surface (installed-package
+  paths, and the caveat that a missing asset is skipped silently); current
+  authority.
 - ADR 0006 — the same core-mediation principle for cross-plugin communication;
   this record applies it to build inputs.
 - The BlogPager pager styles are the worked case: shared by core BlogListing

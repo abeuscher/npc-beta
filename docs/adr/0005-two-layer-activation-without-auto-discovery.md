@@ -31,5 +31,5 @@ Costs:
 
 ## References
 
-- `docs/plugin-contract.md` surface 1 and § The distribution manifest — current authority.
+- `docs/plugin-contract.md` — the registration surface and the distribution-manifest section; current authority.
 - Commits `97097961` + `d94a93ac` (first package, no-auto-discovery guard, 2026-08-18), `b2bc6bab` + `af40965d` (per-install layer + one-image proof, 2026-08-19), `92a07408` (the manifest layer, 2026-08-19).
