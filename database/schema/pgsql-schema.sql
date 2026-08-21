@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Fwkaay9a1xcN0o4pJPFg6wvG8POvgu7xtlbZe7DdVXei7GYua04vCtyqCIUBsoM
+\restrict Pna67W1uKq7S1seemWUHst1dfKLQmiyv2ftkAnG9hEcJy2XGFbrD3mNudJ54fMo
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -69,22 +69,6 @@ CREATE TABLE public.affiliations (
     organization_id uuid NOT NULL,
     role text,
     is_primary boolean DEFAULT false NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
-);
-
-
---
--- Name: allocations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.allocations (
-    id uuid NOT NULL,
-    product_id uuid NOT NULL,
-    product_price_id uuid NOT NULL,
-    contact_id uuid,
-    status character varying(255) DEFAULT 'active'::character varying NOT NULL,
-    occurred_at timestamp(0) without time zone NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone
 );
@@ -1458,14 +1442,6 @@ ALTER TABLE ONLY public.affiliations
 
 
 --
--- Name: allocations allocations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.allocations
-    ADD CONSTRAINT allocations_pkey PRIMARY KEY (id);
-
-
---
 -- Name: cache_locks cache_locks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2505,30 +2481,6 @@ ALTER TABLE ONLY public.affiliations
 
 
 --
--- Name: allocations allocations_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.allocations
-    ADD CONSTRAINT allocations_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
-
-
---
--- Name: allocations allocations_product_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.allocations
-    ADD CONSTRAINT allocations_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE RESTRICT;
-
-
---
--- Name: allocations allocations_product_price_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.allocations
-    ADD CONSTRAINT allocations_product_price_id_foreign FOREIGN KEY (product_price_id) REFERENCES public.product_prices(id) ON DELETE RESTRICT;
-
-
---
 -- Name: collection_items collection_items_collection_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2916,13 +2868,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Fwkaay9a1xcN0o4pJPFg6wvG8POvgu7xtlbZe7DdVXei7GYua04vCtyqCIUBsoM
+\unrestrict Pna67W1uKq7S1seemWUHst1dfKLQmiyv2ftkAnG9hEcJy2XGFbrD3mNudJ54fMo
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict BoDgKDhPzIVsTt6z6OkGMTFAVgQ4grXxQPHiqzvwkstHVa8bfemycxZExXqM1rr
+\restrict Fz8YnATo0h3drBn5UVIKU7OdAVJ4XUN3R9opyM2UI3dIZ41OcKNfceriT6vcUeN
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3072,5 +3024,5 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 114, true);
 -- PostgreSQL database dump complete
 --
 
-\unrestrict BoDgKDhPzIVsTt6z6OkGMTFAVgQ4grXxQPHiqzvwkstHVa8bfemycxZExXqM1rr
+\unrestrict Fz8YnATo0h3drBn5UVIKU7OdAVJ4XUN3R9opyM2UI3dIZ41OcKNfceriT6vcUeN
 
