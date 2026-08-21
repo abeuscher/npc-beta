@@ -13,7 +13,7 @@ uses(TestCase::class);
  * remember to write a guard for it, and nobody can ship a plugin that quietly
  * has none.
  *
- * This replaces seven near-identical per-plugin boundary files. They asserted
+ * This replaces eight near-identical per-plugin boundary files. They asserted
  * the same thing with a different namespace string each time, so the guard's
  * cost grew with every extraction while its coverage stayed flat. Checks that
  * are genuinely specific to one plugin still belong in that plugin's own file
@@ -30,14 +30,14 @@ uses(TestCase::class);
  *      and Dockerfile pinned) is DistributionManifestGuardTest's job.
  *   3. The failure message must name the offending plugin, not just the
  *      offending line. A generic suite that fails without saying which plugin
- *      broke is worse than seven bespoke ones.
+ *      broke is worse than the bespoke ones it replaced.
  *
  * See docs/adr/0009-plugin-tests-in-three-tiers.md for why the kit exists and
  * what belongs in which tier.
  *
  * ── What core legitimately keeps for each vertical ──────────────────────────
  *
- * Carried over from the seven files this replaces. None of it is asserted
+ * Carried over from the eight files this replaces. None of it is asserted
  * here — it is the reason core code may mention a vertical's *concepts*
  * without naming its *classes*, which is the line this guard actually draws.
  * Core reaches every plugin's admin surface by route name only.
@@ -52,6 +52,8 @@ uses(TestCase::class);
  *   Memberships   the models and Transaction stay core
  *   Payments      reached only through the capability layer; its Stripe-
  *                 specific bans stay in PaymentModuleBoundaryTest
+ *   Products      the four product models, their factories and the system-
+ *                 collection seeding stay core, gated on route presence
  */
 
 /** @return array<int, string> every .php file under app/, incl. Blade templates */
