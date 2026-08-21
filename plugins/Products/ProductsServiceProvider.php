@@ -36,6 +36,11 @@ class ProductsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Plugin-owned schema (contract surface 5): the four product tables
+        // left core's dump at the D8 squash-boundary redraw. Install order is
+        // core dump → enabled plugins' migrations → seeders.
+        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+
         View::addNamespace('plugin-products-widgets', __DIR__ . '/Widgets');
 
         $widgets = $this->app->make(WidgetRegistry::class);

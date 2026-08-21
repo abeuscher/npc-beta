@@ -1,5 +1,7 @@
 ## products
 
+**Owned by the Products plugin (`nonprofitcrm/products`, carved session 398)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
 Named finite-inventory entitlements offered by the organisation (plots, slots, packages, etc.).
 
 | Column | Type | Nullable | Notes |

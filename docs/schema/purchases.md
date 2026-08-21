@@ -1,5 +1,7 @@
 ## purchases
 
+**Owned by the Products plugin (`nonprofitcrm/products`, carved session 398)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
 Completed product purchases. Created only on `checkout.session.completed` webhook; never pre-created.
 
 | Column | Type | Nullable | Notes |

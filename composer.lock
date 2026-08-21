@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "02c33aaf6924bae7beef61834d29cb48",
+    "content-hash": "b99c802c4a0c0d328f0634a0dffa017c",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4677,6 +4677,31 @@
                 "issues": "https://github.com/abeuscher/crm-plugin--payments/issues"
             },
             "time": "2026-08-21T02:04:51+00:00"
+        },
+        {
+            "name": "nonprofitcrm/products",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/Products",
+                "reference": "bc70b2967885eda90b77991777ff17eafb600c62"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Plugins\\Products\\": ""
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Products vertical plugin — the product checkout and waitlist endpoints (products.checkout, products.waitlist) consuming the payments capability, the ProductDisplay and ProductCarousel widgets, the Product admin resource with both relation managers, both product observers, the product policy, the CheckoutSettled purchase-fulfillment listener, and the plugin-owned products + product_prices + purchases + waitlist_entries schema.",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "nunomaduro/termwind",

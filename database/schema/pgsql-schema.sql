@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Pna67W1uKq7S1seemWUHst1dfKLQmiyv2ftkAnG9hEcJy2XGFbrD3mNudJ54fMo
+\restrict H27BUxlIkY1SHxUiwl9qaBch5QcOqsLVkWJsry4FqUN8qbC9xfqMjq1wE3D9pZL
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -948,61 +948,6 @@ ALTER SEQUENCE public.permissions_id_seq OWNED BY public.permissions.id;
 
 
 --
--- Name: product_prices; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.product_prices (
-    id uuid NOT NULL,
-    product_id uuid NOT NULL,
-    label character varying(255) NOT NULL,
-    amount numeric(10,2) NOT NULL,
-    stripe_price_id character varying(255),
-    sort_order integer DEFAULT 0 NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
-);
-
-
---
--- Name: products; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.products (
-    id uuid NOT NULL,
-    name character varying(255) NOT NULL,
-    slug character varying(255) NOT NULL,
-    description text,
-    capacity integer NOT NULL,
-    stripe_product_id character varying(255),
-    status character varying(255) DEFAULT 'draft'::character varying NOT NULL,
-    sort_order integer DEFAULT 0 NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    is_archived boolean DEFAULT false NOT NULL,
-    published_at timestamp(0) without time zone,
-    source character varying(255) DEFAULT 'human'::character varying NOT NULL
-);
-
-
---
--- Name: purchases; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.purchases (
-    id uuid NOT NULL,
-    product_id uuid NOT NULL,
-    product_price_id uuid NOT NULL,
-    contact_id uuid,
-    stripe_session_id character varying(255),
-    amount_paid numeric(10,2) NOT NULL,
-    status character varying(255) DEFAULT 'active'::character varying NOT NULL,
-    occurred_at timestamp(0) without time zone NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
-);
-
-
---
 -- Name: record_detail_views; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1257,20 +1202,6 @@ CREATE SEQUENCE public.users_id_seq
 --
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
-
-
---
--- Name: waitlist_entries; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.waitlist_entries (
-    id uuid NOT NULL,
-    product_id uuid NOT NULL,
-    contact_id uuid,
-    status character varying(255) DEFAULT 'waiting'::character varying NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
-);
 
 
 --
@@ -1850,38 +1781,6 @@ ALTER TABLE ONLY public.permissions
 
 
 --
--- Name: product_prices product_prices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.product_prices
-    ADD CONSTRAINT product_prices_pkey PRIMARY KEY (id);
-
-
---
--- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.products
-    ADD CONSTRAINT products_pkey PRIMARY KEY (id);
-
-
---
--- Name: products products_slug_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.products
-    ADD CONSTRAINT products_slug_unique UNIQUE (slug);
-
-
---
--- Name: purchases purchases_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_pkey PRIMARY KEY (id);
-
-
---
 -- Name: record_detail_views record_detail_views_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2023,14 +1922,6 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
---
--- Name: waitlist_entries waitlist_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.waitlist_entries
-    ADD CONSTRAINT waitlist_entries_pkey PRIMARY KEY (id);
 
 
 --
@@ -2346,41 +2237,6 @@ CREATE INDEX pages_source_index ON public.pages USING btree (source);
 
 
 --
--- Name: product_prices_product_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX product_prices_product_id_index ON public.product_prices USING btree (product_id);
-
-
---
--- Name: products_source_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX products_source_index ON public.products USING btree (source);
-
-
---
--- Name: purchases_contact_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX purchases_contact_id_index ON public.purchases USING btree (contact_id);
-
-
---
--- Name: purchases_product_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX purchases_product_id_index ON public.purchases USING btree (product_id);
-
-
---
--- Name: purchases_product_price_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX purchases_product_price_id_index ON public.purchases USING btree (product_price_id);
-
-
---
 -- Name: record_detail_views_handle_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2448,20 +2304,6 @@ CREATE INDEX transactions_source_index ON public.transactions USING btree (sourc
 --
 
 CREATE INDEX transactions_subject_type_subject_id_index ON public.transactions USING btree (subject_type, subject_id);
-
-
---
--- Name: waitlist_entries_contact_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX waitlist_entries_contact_id_index ON public.waitlist_entries USING btree (contact_id);
-
-
---
--- Name: waitlist_entries_product_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX waitlist_entries_product_id_index ON public.waitlist_entries USING btree (product_id);
 
 
 --
@@ -2729,38 +2571,6 @@ ALTER TABLE ONLY public.pages
 
 
 --
--- Name: product_prices product_prices_product_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.product_prices
-    ADD CONSTRAINT product_prices_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
-
-
---
--- Name: purchases purchases_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
-
-
---
--- Name: purchases purchases_product_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE RESTRICT;
-
-
---
--- Name: purchases purchases_product_price_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_product_price_id_foreign FOREIGN KEY (product_price_id) REFERENCES public.product_prices(id) ON DELETE RESTRICT;
-
-
---
 -- Name: role_has_permissions role_has_permissions_permission_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2841,22 +2651,6 @@ ALTER TABLE ONLY public.transactions
 
 
 --
--- Name: waitlist_entries waitlist_entries_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.waitlist_entries
-    ADD CONSTRAINT waitlist_entries_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
-
-
---
--- Name: waitlist_entries waitlist_entries_product_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.waitlist_entries
-    ADD CONSTRAINT waitlist_entries_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
-
-
---
 -- Name: widget_presets widget_presets_widget_type_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2868,13 +2662,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Pna67W1uKq7S1seemWUHst1dfKLQmiyv2ftkAnG9hEcJy2XGFbrD3mNudJ54fMo
+\unrestrict H27BUxlIkY1SHxUiwl9qaBch5QcOqsLVkWJsry4FqUN8qbC9xfqMjq1wE3D9pZL
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict Fz8YnATo0h3drBn5UVIKU7OdAVJ4XUN3R9opyM2UI3dIZ41OcKNfceriT6vcUeN
+\restrict a4MF2nkSHOFQY6pMW2UIzRbuAnvJYpXFCeL6Td1apUFRAWSrMU6KUCUOP68KgRg
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3024,5 +2818,5 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 114, true);
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Fz8YnATo0h3drBn5UVIKU7OdAVJ4XUN3R9opyM2UI3dIZ41OcKNfceriT6vcUeN
+\unrestrict a4MF2nkSHOFQY6pMW2UIzRbuAnvJYpXFCeL6Td1apUFRAWSrMU6KUCUOP68KgRg
 

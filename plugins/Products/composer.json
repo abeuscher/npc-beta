@@ -1,0 +1,15 @@
+{
+    "name": "nonprofitcrm/products",
+    "description": "Products vertical plugin — the product checkout and waitlist endpoints (products.checkout, products.waitlist) consuming the payments capability, the ProductDisplay and ProductCarousel widgets, the Product admin resource with both relation managers, both product observers, the product policy, the CheckoutSettled purchase-fulfillment listener, and the plugin-owned products + product_prices + purchases + waitlist_entries schema.",
+    "type": "library",
+    "license": "MIT",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Products\\": ""
+        }
+    }
+}

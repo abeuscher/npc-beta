@@ -1,5 +1,7 @@
 ## product_prices
 
+**Owned by the Products plugin (`nonprofitcrm/products`, carved session 398)** — created by the plugin's `database/migrations/`, not core's schema dump.
+
 Price tiers for a product. Multiple tiers share the same inventory pool. Zero-amount tiers follow the same Stripe Checkout flow.
 
 | Column | Type | Nullable | Notes |

@@ -76,8 +76,10 @@
         },
         {
             "provider": "Plugins\\Products\\ProductsServiceProvider",
+            "package": "nonprofitcrm/products",
+            "constraint": "^0.1",
             "source": {
-                "type": "folder",
+                "type": "path",
                 "path": "plugins/Products"
             }
         }
