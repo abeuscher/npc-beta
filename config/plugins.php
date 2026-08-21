@@ -21,4 +21,5 @@ return [
     Plugins\MemberPortal\MemberPortalServiceProvider::class,
     Plugins\Blog\BlogServiceProvider::class,
     Plugins\Forms\FormsServiceProvider::class,
+    Plugins\Products\ProductsServiceProvider::class,
 ];

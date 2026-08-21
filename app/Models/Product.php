@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
-use App\Observers\ProductObserver;
 use App\Services\Media\ImageSizeProfile;
 use App\Traits\Archivable;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +15,9 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-#[ObservedBy(ProductObserver::class)]
+// The ProductObserver is registered by the Products plugin's provider —
+// an #[ObservedBy] attribute here would be a core→plugin reach (the
+// observer inversion, session 398; the FormSubmission precedent).
 class Product extends Model implements HasMedia
 {
     use Archivable, EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, InteractsWithMedia;

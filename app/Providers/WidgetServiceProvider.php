@@ -24,12 +24,10 @@ use App\Widgets\Logo\LogoDefinition;
 use App\Widgets\MapEmbed\MapEmbedDefinition;
 use App\Widgets\Memos\MemosDefinition;
 use App\Widgets\Nav\NavDefinition;
-use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Widgets\QuickActions\QuickActionsDefinition;
 use App\Widgets\RandomDataGenerator\RandomDataGeneratorDefinition;
 use App\Widgets\SetupChecklist\SetupChecklistDefinition;
 use App\Widgets\RecentNotes\RecentNotesDefinition;
-use App\Widgets\ProductDisplay\ProductDisplayDefinition;
 use App\Widgets\SocialSharing\SocialSharingDefinition;
 use App\Widgets\Table\TableDefinition;
 use App\Widgets\TextBlock\TextBlockDefinition;
@@ -65,8 +63,6 @@ class WidgetServiceProvider extends ServiceProvider
 
         $registry->register(new TextBlockDefinition());
         $registry->register(new ButtonRowDefinition());
-        $registry->register(new ProductDisplayDefinition());
-        $registry->register(new ProductCarouselDefinition());
         $registry->register(new ImageDefinition());
         $registry->register(new LogoDefinition());
         $registry->register(new VideoEmbedDefinition());

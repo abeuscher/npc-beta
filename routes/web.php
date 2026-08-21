@@ -4,8 +4,6 @@ use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\DocsController;
-use App\Http\Controllers\ProductCheckoutController;
-use App\Http\Controllers\ProductWaitlistController;
 use App\Http\Controllers\MailChimpWebhookController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\WidgetThumbnailController;
@@ -39,13 +37,9 @@ Route::get('/home', fn () => redirect('/', 301))->name('home.redirect');
 // The donation checkout route (donations.checkout) is registered by the
 // Donations plugin (vendor/nonprofitcrm/donations/routes/web.php).
 
-// Product checkout and waitlist
-Route::post('/products/checkout', [ProductCheckoutController::class, 'store'])
-    ->name('products.checkout')
-    ->middleware('throttle:20,1');
-Route::post('/products/waitlist', [ProductWaitlistController::class, 'store'])
-    ->name('products.waitlist')
-    ->middleware('throttle:10,1');
+// The product checkout and waitlist routes (products.checkout,
+// products.waitlist) are registered by the Products plugin
+// (plugins/Products/routes/web.php).
 
 // The web form submission route (forms.submit) is registered by the
 // Forms plugin (vendor/nonprofitcrm/forms/routes/web.php).

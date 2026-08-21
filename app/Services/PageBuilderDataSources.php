@@ -39,6 +39,13 @@ class PageBuilderDataSources
 
     private static function products(): array
     {
+        // Composition safety (session 398): the products table is plugin-owned
+        // — on a products-absent composition the read would crash, so the
+        // admin picker degrades to an empty list on the route-presence signal.
+        if (! \Illuminate\Support\Facades\Route::has('products.checkout')) {
+            return [];
+        }
+
         return Product::where('status', 'published')
             ->orderBy('name')
             ->get(['slug', 'name'])

@@ -8,7 +8,7 @@ use Plugins\Events\Filament\Resources\EventResource;
 use Plugins\Donations\Filament\Resources\FundResource;
 use Plugins\Memberships\Filament\Resources\MembershipTierResource;
 use App\Filament\Resources\PageResource;
-use App\Filament\Resources\ProductResource;
+use Plugins\Products\Filament\Resources\ProductResource;
 use App\Filament\Resources\WidgetTypeResource;
 use App\Models\Collection;
 use App\Models\CollectionItem;

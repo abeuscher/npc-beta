@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f6c1ffd7b781a1c8c05cc812350db57f",
+    "content-hash": "02c33aaf6924bae7beef61834d29cb48",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4646,16 +4646,16 @@
         },
         {
             "name": "nonprofitcrm/payments",
-            "version": "v0.3.0",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/abeuscher/crm-plugin--payments.git",
-                "reference": "c4c9a0dedf181152553128a98feef287380b394a"
+                "reference": "f53a46033fb03d264444b5e449ede35182074572"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/abeuscher/crm-plugin--payments/zipball/c4c9a0dedf181152553128a98feef287380b394a",
-                "reference": "c4c9a0dedf181152553128a98feef287380b394a",
+                "url": "https://api.github.com/repos/abeuscher/crm-plugin--payments/zipball/f53a46033fb03d264444b5e449ede35182074572",
+                "reference": "f53a46033fb03d264444b5e449ede35182074572",
                 "shasum": ""
             },
             "require": {
@@ -4673,10 +4673,10 @@
             ],
             "description": "Payments foundation plugin — Stripe rails: checkout-session creation, webhook handling, payment-mode detection, product price sync, and the payments capability.",
             "support": {
-                "source": "https://github.com/abeuscher/crm-plugin--payments/tree/v0.3.0",
+                "source": "https://github.com/abeuscher/crm-plugin--payments/tree/v0.4.0",
                 "issues": "https://github.com/abeuscher/crm-plugin--payments/issues"
             },
-            "time": "2026-08-20T02:48:21+00:00"
+            "time": "2026-08-21T02:04:51+00:00"
         },
         {
             "name": "nunomaduro/termwind",

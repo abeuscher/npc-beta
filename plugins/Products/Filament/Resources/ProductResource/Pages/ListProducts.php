@@ -1,0 +1,26 @@
+<?php
+
+namespace Plugins\Products\Filament\Resources\ProductResource\Pages;
+
+use Plugins\Products\Filament\Resources\ProductResource;
+use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
+
+class ListProducts extends ListRecords
+{
+    protected static string $resource = ProductResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\CreateAction::make(),
+        ];
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [
+            'Products',
+        ];
+    }
+}

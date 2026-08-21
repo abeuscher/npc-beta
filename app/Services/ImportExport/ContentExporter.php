@@ -107,7 +107,12 @@ class ContentExporter
         $pageIds       = Page::pluck('id')->all();
         $templateIds   = Template::pluck('id')->all();
         $navMenuIds    = NavigationMenu::pluck('id')->all();
-        $productIds    = Product::pluck('id')->all();
+        // Composition safety (session 398): the products table is plugin-owned
+        // — a products-absent composition exports an empty products slice on
+        // the route-presence signal (the import side iterates it empty).
+        $productIds    = \Illuminate\Support\Facades\Route::has('products.checkout')
+            ? Product::pluck('id')->all()
+            : [];
         $eventIds      = Event::pluck('id')->all();
         $collectionIds = CollectionModel::pluck('id')->all();
 

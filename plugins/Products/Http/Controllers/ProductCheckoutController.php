@@ -1,0 +1,71 @@
+<?php
+
+namespace Plugins\Products\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Models\ProductPrice;
+use App\Payments\Contracts\CheckoutProvider;
+use App\Plugins\CapabilityRegistry;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+
+class ProductCheckoutController extends Controller
+{
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'product_price_id' => ['required', 'uuid', 'exists:product_prices,id'],
+            'success_page'     => ['nullable', 'string', 'exists:pages,slug'],
+        ]);
+
+        $price   = ProductPrice::with('product')->findOrFail($validated['product_price_id']);
+        $product = $price->product;
+
+        if ($product->isAtCapacity()) {
+            return back()->withErrors(['checkout' => 'This product is no longer available — it has reached capacity.']);
+        }
+
+        if (! app(CapabilityRegistry::class)->enabled('payments')) {
+            return back()->withErrors(['checkout' => 'Payment processing is not configured.']);
+        }
+
+        $checkout = app(CheckoutProvider::class);
+
+        $referer    = strtok($request->header('Referer', url('/')), '?');
+        $successUrl = isset($validated['success_page'])
+            ? url($validated['success_page']) . '?checkout=success'
+            : $referer . '?checkout=success';
+        $cancelUrl  = $referer . '?checkout=cancelled';
+
+        $productImage = $product->getFirstMediaUrl('product_image')
+            ?: $checkout->defaultImageUrl('product');
+        $imagesArr = filled($productImage) ? ['images' => [$productImage]] : [];
+
+        $lineItem = $price->stripe_price_id
+            ? ['price' => $price->stripe_price_id, 'quantity' => 1]
+            : [
+                'price_data' => [
+                    'currency'     => 'usd',
+                    'unit_amount'  => 0,
+                    'product_data' => [
+                        'name' => $product->name . ' — ' . $price->label,
+                    ] + $imagesArr,
+                ],
+                'quantity' => 1,
+            ];
+
+        try {
+            $session = $checkout->createSession(
+                lineItems: [$lineItem],
+                metadata: ['product_price_id' => $price->id],
+                successUrl: $successUrl,
+                cancelUrl: $cancelUrl,
+                submitType: 'pay',
+            );
+        } catch (\Throwable $e) {
+            return back()->withErrors(['checkout' => 'Could not initiate checkout. Please try again.']);
+        }
+
+        return redirect()->away($session->url);
+    }
+}
