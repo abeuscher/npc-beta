@@ -24,6 +24,15 @@ uses(TestCase::class);
  * untouched by this guard.
  */
 
+/*
+ * The plugin-namespace containment check that used to live here now runs
+ * generically for every installed plugin in PluginConformanceTest. What stays
+ * below is genuinely specific to this vertical: Payments is the only plugin
+ * carrying a third-party SDK, so the SDK and config-namespace bans have no
+ * generic form and would need an exception list in the kit — which is the
+ * kit's rule for what does NOT belong in it.
+ */
+
 /** @return array<int, string> every .php file under app/, incl. Blade templates */
 function paymentBoundaryAppFiles(): array
 {
@@ -66,16 +75,6 @@ it('keeps the Stripe SDK out of core', function () {
     // Positive controls: the plugin's own files DO match both patterns.
     $service = (string) file_get_contents(base_path('vendor/nonprofitcrm/payments/Services/StripeCheckoutService.php'));
     expect($service)->toMatch($sdkNamespace)->toMatch($client);
-});
-
-it('keeps the Plugins\\Payments namespace out of core', function () {
-    $pattern = '/Plugins\\\\Payments/';
-
-    expect(paymentBoundaryOffenders($pattern))->toBe([]);
-
-    // Positive control: the wiring point (config/plugins.php) DOES match and
-    // is deliberately outside the scanned set.
-    expect((string) file_get_contents(config_path('plugins.php')))->toMatch($pattern);
 });
 
 it('keeps services.stripe config reads out of core', function () {
