@@ -98,10 +98,16 @@ test.describe('Per-template content scheme — three surfaces, scheme-switched',
         await page.goto('/admin');
         await page.locator('body').waitFor({ state: 'visible' });
 
-        const bgOnAdminBody = await page.evaluate(() =>
-            getComputedStyle(document.body).getPropertyValue('--np-color-bg').trim(),
-        );
-        expect(bgOnAdminBody).toBe('');
+        // Both --np-color-bg and --np-color-brand are read here: the brand
+        // half arrived with the widget colour-token work, which carried its
+        // own single-test spec asserting exactly this on exactly this page.
+        // Folded in rather than kept as a second file.
+        const tokensOnAdminBody = await page.evaluate(() => ({
+            bg: getComputedStyle(document.body).getPropertyValue('--np-color-bg').trim(),
+            brand: getComputedStyle(document.body).getPropertyValue('--np-color-brand').trim(),
+        }));
+        expect(tokensOnAdminBody.bg).toBe('');
+        expect(tokensOnAdminBody.brand).toBe('');
         await expect(page.locator('body.np-site')).toHaveCount(0);
     });
 

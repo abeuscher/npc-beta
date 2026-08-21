@@ -56,9 +56,8 @@ The importer e2e suite covers the **browser-only** contract — the Filament/Liv
 - `donations-error-report` — the error table + the errored-rows **download**.
 - `donations-mapping-indicator` — Choices.js mapping-select search input (lazy-init).
 - `site-import-export` — FilePond bundle upload + manifest summary + gated import toggles.
-- `notes-happy-path` — the notes wizard happy path + approve.
 
-Fixture folders live at `tests/e2e/fixtures/{importer}/` (`happy-path.csv`, `update-second-pass.csv`, `happy-path.expected.json`) and are still consumed by the kept contacts/donations/notes specs and their shared wizard helpers. See `docs/testing/playwright-discipline.md` for the keep/redundant decision rule.
+Fixture folders live at `tests/e2e/fixtures/{importer}/` (`happy-path.csv`, `update-second-pass.csv`, `happy-path.expected.json`). Only **contacts** and **donations** remain: the sets for events, memberships, invoice-details and organizations were left behind when Cycle 1 deleted the specs that read them, and Cycle 3 removed them as dead weight. A fixture belongs to whatever owns the spec that reads it, so an importer spec for a plugin-owned vertical ships its own fixture in the plugin repository rather than reviving one here — see `docs/adr/0008-browser-tests-travel-with-the-plugin.md`. The shared wizard helpers still carry drivers and route maps for every importer; those are core's, and they stay. See `docs/testing/playwright-discipline.md` for the keep/redundant decision rule.
 
 ## Generated CSV fixtures (Pest, not Playwright)
 

@@ -76,7 +76,7 @@ test.describe('Page builder — inline formatting toolbar', () => {
         if (textBlockId) await deleteWidget(textBlockId);
     });
 
-    test('appears positioned on activation and dismisses on outside click (§B1/§B4/§C — position composable)', async ({ page }) => {
+    test('appears positioned on activation and dismisses on outside click', async ({ page }) => {
         await page.goto(`/admin/pages/${pageId}/edit`);
         const { bar } = await activate(page, textBlockId);
 
@@ -95,7 +95,7 @@ test.describe('Page builder — inline formatting toolbar', () => {
         await expect(bar).toHaveCSS('opacity', '0');
     });
 
-    test('corner affordances are suppressed while inline-editing (§C14)', async ({ page }) => {
+    test('corner affordances are suppressed while inline-editing', async ({ page }) => {
         await page.goto(`/admin/pages/${pageId}/edit`);
         await activate(page, textBlockId);
 
@@ -110,7 +110,7 @@ test.describe('Page builder — inline formatting toolbar', () => {
         await expect(region.locator('.preview-region__edit')).toHaveCSS('opacity', '0');
     });
 
-    test('bold toggle persists to saved config (§F2.1/§L — format dispatch)', async ({ page }) => {
+    test('bold toggle persists to saved config', async ({ page }) => {
         await page.goto(`/admin/pages/${pageId}/edit`);
         const { editor, bar } = await activate(page, textBlockId);
 
@@ -125,7 +125,7 @@ test.describe('Page builder — inline formatting toolbar', () => {
             .toMatch(/<strong>|<b>/i);
     });
 
-    test('heading applied via the text-style menu persists (§F1 — text-style sub-component)', async ({ page }) => {
+    test('heading applied via the text-style menu persists', async ({ page }) => {
         await page.goto(`/admin/pages/${pageId}/edit`);
         const { editor, bar } = await activate(page, textBlockId);
 
@@ -144,7 +144,7 @@ test.describe('Page builder — inline formatting toolbar', () => {
             .toMatch(/<h2/i);
     });
 
-    test('color popover opens, renders the picker panel, and toggles closed (§H — color sub-component)', async ({ page }) => {
+    test('color popover opens, renders the picker panel, and toggles closed', async ({ page }) => {
         await page.goto(`/admin/pages/${pageId}/edit`);
         const { editor, bar } = await activate(page, textBlockId);
 
@@ -163,7 +163,7 @@ test.describe('Page builder — inline formatting toolbar', () => {
         await expect(popover).toBeHidden();
     });
 
-    test('link popover saves href + target + rel with "open in new tab" (§G / §6.2 — link composable)', async ({ page }) => {
+    test('link popover saves href + target + rel with "open in new tab"', async ({ page }) => {
         await page.goto(`/admin/pages/${pageId}/edit`);
         const { editor, bar } = await activate(page, textBlockId);
 
@@ -189,7 +189,7 @@ test.describe('Page builder — inline formatting toolbar', () => {
         expect(html).toMatch(/rel="[^"]*noopener[^"]*"/);
     });
 
-    test('Cmd/Ctrl+K from inside the editor opens the link popover (§F4.2 — keyboard composable)', async ({ page }) => {
+    test('Cmd/Ctrl+K from inside the editor opens the link popover', async ({ page }) => {
         await page.goto(`/admin/pages/${pageId}/edit`);
         const { editor } = await activate(page, textBlockId);
 

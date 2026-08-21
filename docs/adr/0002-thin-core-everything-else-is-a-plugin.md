@@ -43,5 +43,5 @@ Costs:
 
 ## References
 
-- `sessions/plugin-architecture-plan.md` §§ 1–4 (motivation, principles, the end-state core table) — canonical.
-- `docs/plugin-contract.md` — the published surface list (13 surfaces).
+- `sessions/plugin-architecture-plan.md` — the motivation, the principles, and the table naming what stays in the core engine; canonical.
+- `docs/plugin-contract.md` — the full list of surfaces core publishes to plugins.

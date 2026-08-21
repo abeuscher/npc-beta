@@ -5,7 +5,7 @@
 // resolves them to the expected computed border-* values. Inline appearance
 // styles are emitted by the renderer regardless of whether the widget bundle
 // has been built, so this guard is CI-viable inside the isolated e2e stack
-// (unlike widget-bundle CSS — see widget-color-tokens.spec.ts).
+// (unlike widget-bundle CSS — see docs/testing/playwright-discipline.md).
 //
 // The guard is intentionally narrow: one bordered Text widget on the seeded
 // home page, one set of computed-value assertions covering width, style,

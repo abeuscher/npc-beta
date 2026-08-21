@@ -31,6 +31,6 @@ Costs:
 
 ## References
 
-- `docs/plugin-contract.md` surfaces 10 (events/hooks, incl. the self-filter rule) and 13 (capability detection) — current authority.
-- `sessions/plugin-architecture-plan.md` § 6.2 (foundation plugins; verticals never depend on each other).
+- `docs/plugin-contract.md` — the events-and-hooks surface (including the rule that a plugin ignores its own emissions) and the capability-detection surface; current authority.
+- `sessions/plugin-architecture-plan.md` — the settled question establishing foundation plugins: hard dependencies point only at core, and verticals never depend on each other.
 - Commits `3767702a` (the first inversion, events slice, 2026-08-18), `7d2dc087` (the donations slice — the first cross-repo inversion, 2026-08-19).
